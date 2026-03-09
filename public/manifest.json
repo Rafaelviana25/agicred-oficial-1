@@ -1,16 +1,24 @@
 {
-  "name": "Agicred",
-  "short_name": "Agicred",
-  "description": "Aplicativo Agicred",
+  "name": "AGICRED",
+  "short_name": "AGICRED",
+  "description": "Aplicativo de gestão de empréstimos pessoais",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#ffffff",
-  "theme_color": "#10b981",
+  "theme_color": "#7C3AED",
+  "dir": "ltr",
+  "categories": [
+    "productivity",
+    "finance"
+  ],
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
