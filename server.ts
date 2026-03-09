@@ -40,10 +40,36 @@ async function sendOneSignalPush(title: string, body: string, playerId: string) 
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(cors());
   app.use(express.json());
+
+  // Initialize Supabase Admin Client
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  let supabase: any = null;
+  if (supabaseUrl && supabaseServiceKey) {
+    try {
+      supabase = createClient(supabaseUrl, supabaseServiceKey);
+    } catch (e) {
+      console.error('Failed to initialize Supabase client:', e);
+    }
+  }
+
+  // Initialize Mercado Pago
+  const mpAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  let payment: Payment | null = null;
+  
+  if (mpAccessToken) {
+    try {
+      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
+      payment = new Payment(client);
+    } catch (e) {
+      console.error('Failed to initialize Mercado Pago client:', e);
+    }
+  }
 
   // Webhook Handler - Moved to top to ensure it's not intercepted
   app.post(['/api/webhook/mercadopago', '/api/webhook/mercadopago/'], async (req, res) => {
@@ -164,19 +190,6 @@ async function startServer() {
     });
   });
 
-  // Initialize Supabase Admin Client
-  const supabaseUrl = process.env.VITE_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  let supabase: any = null;
-  if (supabaseUrl && supabaseServiceKey) {
-    try {
-      supabase = createClient(supabaseUrl, supabaseServiceKey);
-    } catch (e) {
-      console.error('Failed to initialize Supabase client:', e);
-    }
-  }
-
   // --- CRON JOB: Check for overdue contracts and send push notifications ---
   // Runs every day at 08:00 AM and 08:00 PM (20:00)
   const checkAndSendOverdueNotifications = async () => {
@@ -266,19 +279,6 @@ async function startServer() {
     }
   });
   // -------------------------------------------------------------------------
-
-  // Initialize Mercado Pago
-  const mpAccessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  let payment: Payment | null = null;
-  
-  if (mpAccessToken) {
-    try {
-      const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-      payment = new Payment(client);
-    } catch (e) {
-      console.error('Failed to initialize Mercado Pago client:', e);
-    }
-  }
 
   // Create Payment (PIX)
   app.post('/api/create-payment', async (req, res) => {
