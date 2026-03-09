@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
@@ -40,7 +39,7 @@ async function sendOneSignalPush(title: string, body: string, playerId: string) 
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   app.use(cors());
   app.use(express.json());
@@ -490,6 +489,7 @@ async function startServer() {
   // Vite Middleware
   if (process.env.NODE_ENV !== 'production') {
     try {
+      const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: 'spa',
@@ -503,7 +503,7 @@ async function startServer() {
     app.use(express.static('dist'));
     
     // SPA fallback
-    app.get('/(.*)', (req, res) => {
+    app.get(/.*/, (req, res) => {
       res.sendFile(process.cwd() + '/dist/index.html');
     });
   }
