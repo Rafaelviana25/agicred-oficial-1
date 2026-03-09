@@ -406,33 +406,10 @@ async function startServer() {
         return res.status(404).json({ error: 'User has no push token registered. Remember that push notifications only work on native Android/iOS apps, not on the web browser.' });
       }
 
-      // Find an overdue contract for this user
-      const today = new Date().toISOString().split('T')[0];
-      const { data: overdueContract, error: contractError } = await supabase
-        .from('contracts')
-        .select('id, client_id, end_date, status')
-        .eq('user_id', userId)
-        .or(`status.eq.overdue,and(status.eq.active,end_date.lt.${today})`)
-        .limit(1)
-        .single();
-
-      if (contractError || !overdueContract) {
-        return res.status(404).json({ error: 'Nenhum contrato vencido encontrado para testar a notificação.' });
-      }
-
-      // Get the client's name
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('full_name')
-        .eq('id', overdueContract.client_id)
-        .single();
-
-      const clientName = clientData?.full_name || 'um cliente';
-
       try {
         await sendOneSignalPush(
-          'Contrato Vencido! ⚠️',
-          `O contrato do cliente ${clientName} está vencido!`,
+          'Teste de Notificação! 🚀',
+          'Seu sistema de notificações push está funcionando perfeitamente!',
           profile.push_token
         );
         res.json({ success: true, message: 'Push notification sent successfully' });
