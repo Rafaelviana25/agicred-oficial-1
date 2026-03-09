@@ -1793,6 +1793,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const [generatingReport, setGeneratingReport] = useState(false);
   const [validating, setValidating] = useState(false);
 
+  useEffect(() => {
+    setPushEnabled(!!user.push_token);
+  }, [user.push_token]);
+
   const generateReport = () => {
     if (!user.is_pro) {
       setShowProMessage(true);
@@ -2244,7 +2248,23 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               if (newState) {
                 user.push_token = 'pending'; // Atualiza localmente para manter o botão ligado
                 import('../services/pushNotifications').then(({ setupPushNotifications }) => {
-                  setupPushNotifications(user.id);
+                  setupPushNotifications(user.id).then(() => {
+                    // Refresh user data to get the actual token
+                    supabase.from('profiles').select('push_token').eq('id', user.id).single().then(({ data }) => {
+                      if (data && data.push_token) {
+                        user.push_token = data.push_token;
+                        setPushEnabled(true);
+                      } else {
+                        // Se falhou em pegar o token, desativa o botão
+                        user.push_token = null;
+                        setPushEnabled(false);
+                      }
+                    });
+                  }).catch(() => {
+                    // Reverte o botão se der erro
+                    user.push_token = null;
+                    setPushEnabled(false);
+                  });
                 });
               } else {
                 // Desativar notificações: remover o token do banco de dados
@@ -2263,40 +2283,86 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           </button>
 
           {user.is_pro && pushEnabled && (
-            <button 
-              type="button" 
-              onClick={async () => {
-                try {
-                  // In development, API_URL is empty (same origin). In production, it might be set or empty.
-                  const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
-                  console.log(`Triggering notification check at: ${API_URL}/api/trigger-overdue-check`);
-                  
-                  const res = await fetch(`${API_URL}/api/trigger-overdue-check`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                  });
-                  
-                  if (!res.ok) {
-                    const text = await res.text();
-                    console.error('Server error:', text);
-                    throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
+            <div className="flex flex-col gap-2 mt-2">
+              <button 
+                type="button" 
+                onClick={async () => {
+                  try {
+                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
+                    console.log(`Triggering test push at: ${API_URL}/api/test-push`);
+                    
+                    const res = await fetch(`${API_URL}/api/test-push`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: user.id })
+                    });
+                    
+                    if (!res.ok) {
+                      const text = await res.text();
+                      console.error('Server error:', text);
+                      try {
+                        const errData = JSON.parse(text);
+                        if (errData.error && errData.error.includes('no push token registered')) {
+                          throw new Error('Você ainda não ativou as notificações ou está usando o navegador. As notificações só funcionam no aplicativo instalado no celular.');
+                        }
+                        throw new Error(errData.error || `Erro do servidor (${res.status})`);
+                      } catch(e: any) {
+                        if (e.message.includes('navegador')) throw e;
+                        throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
+                      }
+                    }
+                    
+                    const data = await res.json();
+                    alert(`Sucesso: ${data.message}`);
+                  } catch (err: any) {
+                    console.error('Fetch error:', err);
+                    let msg = err.message;
+                    if (msg === 'Failed to fetch') {
+                      msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
+                    }
+                    alert(msg.includes('navegador') ? msg : `Erro ao testar: ${msg}`);
                   }
-                  
-                  const data = await res.json();
-                  alert(`Varredura concluída: ${data.message}`);
-                } catch (err: any) {
-                  console.error('Fetch error:', err);
-                  let msg = err.message;
-                  if (msg === 'Failed to fetch') {
-                    msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
+                }} 
+                className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100 active:scale-95 border-emerald-200"
+              >
+                <Bell size={14} className="mr-2"/> TESTAR NOTIFICAÇÃO NO MEU CELULAR
+              </button>
+
+              <button 
+                type="button" 
+                onClick={async () => {
+                  try {
+                    // In development, API_URL is empty (same origin). In production, it might be set or empty.
+                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
+                    console.log(`Triggering notification check at: ${API_URL}/api/trigger-overdue-check`);
+                    
+                    const res = await fetch(`${API_URL}/api/trigger-overdue-check`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (!res.ok) {
+                      const text = await res.text();
+                      console.error('Server error:', text);
+                      throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
+                    }
+                    
+                    const data = await res.json();
+                    alert(`Varredura concluída: ${data.message}`);
+                  } catch (err: any) {
+                    console.error('Fetch error:', err);
+                    let msg = err.message;
+                    if (msg === 'Failed to fetch') {
+                      msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
+                    }
+                    alert(`Erro ao disparar: ${msg}`);
                   }
-                  alert(`Erro ao disparar: ${msg}`);
-                }
-              }} 
-              className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-indigo-50 text-indigo-600 shadow-sm hover:bg-indigo-100 active:scale-95 border-indigo-200 mt-2"
-            >
-              <Bell size={14} className="mr-2"/> DISPARAR NOTIFICAÇÕES AGORA
-            </button>
+                }} 
+                className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-indigo-50 text-indigo-600 shadow-sm hover:bg-indigo-100 active:scale-95 border-indigo-200"
+              >
+                <Bell size={14} className="mr-2"/> VARREDURA DE VENCIDOS AGORA
+              </button>
+            </div>
           )}
 
           {!user.is_pro && (
