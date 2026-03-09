@@ -21,40 +21,60 @@ export const setupPushNotifications = (userId: string): Promise<void> => {
         (window as any).median.onesignal.register();
 
         let attempts = 0;
-        const checkMedianToken = () => {
-          (window as any).median.onesignal.info().then(async (info: any) => {
-            const playerId = info.oneSignalUserId;
-            if (playerId) {
-              const { error } = await supabase
-                .from('profiles')
-                .update({ push_token: playerId }) 
-                .eq('id', userId);
-
-              if (error) {
-                console.error('Erro ao salvar no Supabase:', error);
-                alert("Erro ao salvar o token de notificação no banco de dados.");
-                reject(error);
-              } else {
-                console.log('Token Nativo salvo com sucesso na coluna push_token!');
-                alert("Notificações ativadas com sucesso neste dispositivo!");
-                resolve();
-              }
-            } else {
-              attempts++;
-              if (attempts < 10) {
-                setTimeout(checkMedianToken, 2000); // Tenta novamente a cada 2 segundos (máx 20s)
-              } else {
-                alert("Não foi possível obter o token do dispositivo. Verifique se você deu permissão de notificação.");
-                reject(new Error("Timeout waiting for token"));
-              }
-            }
-          }).catch((err: any) => {
-            console.error("Erro ao obter info do Median:", err);
-            reject(err);
-          });
-        };
+        let tokenFound = false;
         
-        checkMedianToken();
+        // O Median.co usa callbacks globais para retornar dados da ponte JS
+        (window as any).onesignalInfoCallback = async (info: any) => {
+          if (tokenFound) return;
+          console.log("Median OneSignal Info recebido:", JSON.stringify(info));
+          
+          // O formato do info pode variar um pouco dependendo da versão do Median
+          const playerId = info?.oneSignalUserId || info?.userId || info?.playerId;
+          
+          if (playerId) {
+            tokenFound = true;
+            const { error } = await supabase
+              .from('profiles')
+              .update({ push_token: playerId }) 
+              .eq('id', userId);
+
+            if (error) {
+              console.error('Erro ao salvar no Supabase:', error);
+              alert("Erro ao salvar o token de notificação no banco de dados.");
+              reject(error);
+            } else {
+              console.log('Token Nativo salvo com sucesso na coluna push_token!');
+              alert("Notificações ativadas com sucesso neste dispositivo!");
+              resolve();
+            }
+          }
+        };
+
+        // Usa setInterval para garantir que vamos continuar perguntando ao Median
+        // mesmo se o callback falhar ou demorar
+        const pollInterval = setInterval(() => {
+          if (tokenFound) {
+            clearInterval(pollInterval);
+            return;
+          }
+
+          attempts++;
+          if (attempts >= 15) { // 30 segundos no total
+            clearInterval(pollInterval);
+            alert("O aplicativo não conseguiu gerar o token de notificação.\n\nVerifique 2 coisas:\n1. Você gerou um NOVO APK (Rebuild) no Median APÓS inserir o App ID?\n2. No painel do OneSignal, você configurou o 'Google Android (FCM)'?");
+            reject(new Error("Timeout waiting for token"));
+            return;
+          }
+
+          try {
+            if ((window as any).median && (window as any).median.onesignal) {
+              (window as any).median.onesignal.info({ callback: 'onesignalInfoCallback' });
+            }
+          } catch (e) {
+            console.error("Erro ao chamar median.onesignal.info:", e);
+          }
+        }, 2000);
+        
         return;
       }
 
@@ -120,7 +140,6 @@ export const setupPushNotifications = (userId: string): Promise<void> => {
         alert("Permissão concedida! O ID será salvo em instantes.");
       }
     } catch (err: any) {
-      console.error('Setup failed:', err);
       const msg = err.message || String(err);
       if (msg.includes('already initialized')) {
         console.log('OneSignal já inicializado.');
@@ -130,6 +149,7 @@ export const setupPushNotifications = (userId: string): Promise<void> => {
         console.log('Web push not configured, handled in inner catch.');
         reject(err); // Re-throw to let Dashboard know it failed
       } else {
+        console.error('Setup failed:', err);
         alert(`Erro ao configurar notificações: ${msg}`);
         reject(err); // Re-throw to let Dashboard know it failed
       }

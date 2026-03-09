@@ -2299,15 +2299,16 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     
                     if (!res.ok) {
                       const text = await res.text();
-                      console.error('Server error:', text);
                       try {
                         const errData = JSON.parse(text);
                         if (errData.error && errData.error.includes('no push token registered')) {
                           throw new Error('Você ainda não ativou as notificações ou está usando o navegador. As notificações só funcionam no aplicativo instalado no celular.');
                         }
+                        console.error('Server error:', text);
                         throw new Error(errData.error || `Erro do servidor (${res.status})`);
                       } catch(e: any) {
                         if (e.message.includes('navegador')) throw e;
+                        console.error('Server error:', text);
                         throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
                       }
                     }
@@ -2315,10 +2316,12 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     const data = await res.json();
                     alert(`Sucesso: ${data.message}`);
                   } catch (err: any) {
-                    console.error('Fetch error:', err);
                     let msg = err.message;
                     if (msg === 'Failed to fetch') {
                       msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
+                      console.error('Fetch error:', err);
+                    } else if (!msg.includes('navegador')) {
+                      console.error('Fetch error:', err);
                     }
                     alert(msg.includes('navegador') ? msg : `Erro ao testar: ${msg}`);
                   }
