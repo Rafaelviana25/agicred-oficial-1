@@ -2,7 +2,7 @@
   "name": "AGICRED",
   "short_name": "AGICRED",
   "description": "Aplicativo de gestão de empréstimos pessoais",
-  "start_url": "/",
+  "start_url": "https://agicred-9wto.onrender.com",
   "id": "/",
   "display": "standalone",
   "orientation": "portrait",
