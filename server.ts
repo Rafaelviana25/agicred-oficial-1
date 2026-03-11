@@ -449,15 +449,61 @@ async function startServer() {
         return res.status(404).json({ error: 'Usuário não possui token de notificação registrado.' });
       }
 
-      try {
-        await sendFirebasePush(
-          'Teste de Notificação! 🚀',
-          'Seu sistema de notificações Firebase está funcionando perfeitamente!',
-          profile.push_token
-        );
-        res.json({ success: true, message: 'Notificação enviada com sucesso' });
-      } catch (pushError: any) {
-        throw pushError;
+      // Check for overdue contracts for this user
+      const today = new Date().toISOString().split('T')[0];
+      const { data: overdueContracts, error } = await supabase
+        .from('contracts')
+        .select('id, client_id, end_date')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .lt('end_date', today);
+
+      if (error) {
+        return res.status(500).json({ error: 'Erro ao buscar contratos vencidos' });
+      }
+
+      if (overdueContracts && overdueContracts.length > 0) {
+        let sentCount = 0;
+        for (const contract of overdueContracts) {
+          // Update status to overdue
+          await supabase
+            .from('contracts')
+            .update({ status: 'overdue' })
+            .eq('id', contract.id);
+
+          // Get the client's name
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('full_name')
+            .eq('id', contract.client_id)
+            .single();
+
+          const clientName = clientData?.full_name || 'um cliente';
+
+          try {
+            await sendFirebasePush(
+              'Contrato Vencido! ⚠️',
+              `O contrato do cliente ${clientName} está vencido!`,
+              profile.push_token
+            );
+            sentCount++;
+          } catch (pushError: any) {
+            console.error(`Failed to send push notification to ${profile.push_token}:`, pushError);
+          }
+        }
+        res.json({ success: true, message: `Foram encontrados ${overdueContracts.length} contratos vencidos e ${sentCount} notificações foram enviadas.` });
+      } else {
+        // Send a simulated notification if no overdue contracts are found so they can still test it
+        try {
+          await sendFirebasePush(
+            'Contrato Vencido! ⚠️ (Simulação)',
+            'Nenhum contrato vencido foi encontrado agora, mas é assim que a notificação aparecerá!',
+            profile.push_token
+          );
+          res.json({ success: true, message: 'Nenhum contrato vencido encontrado. Uma notificação de simulação foi enviada para teste.' });
+        } catch (pushError: any) {
+          throw pushError;
+        }
       }
     } catch (error: any) {
       console.error('Error sending test push:', error);
