@@ -12,139 +12,115 @@ dotenv.config();
 function initializeFirebaseAdmin() {
   if (admin.apps.length > 0) return;
 
+  // TENTATIVA 1: Usar variáveis individuais (MUITO mais estável no Render)
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (projectId && clientEmail && privateKeyRaw) {
+    console.log('Inicializando Firebase via variáveis individuais (Método estável)');
+    try {
+      let privateKey = privateKeyRaw.trim();
+      
+      // Normalização da Private Key
+      const header = '-----BEGIN PRIVATE KEY-----';
+      const footer = '-----END PRIVATE KEY-----';
+      
+      // Remove lixo e normaliza
+      let cleanedKey = privateKey;
+      if (cleanedKey.includes(header) && cleanedKey.includes(footer)) {
+        cleanedKey = cleanedKey.split(header)[1].split(footer)[0];
+      }
+      
+      cleanedKey = cleanedKey.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '');
+      const matches = cleanedKey.match(/.{1,64}/g);
+      const formattedKey = matches ? matches.join('\n') : cleanedKey;
+      const finalKey = `${header}\n${formattedKey}\n${footer}`;
+
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey: finalKey
+        })
+      });
+      console.log('Firebase Admin inicializado com sucesso (Variáveis individuais)!');
+      return;
+    } catch (e: any) {
+      console.error('Erro ao inicializar com variáveis individuais:', e.message);
+      // Se falhar, tenta o método do JSON como fallback
+    }
+  }
+
+  // TENTATIVA 2: Usar o JSON completo (Método antigo/fallback)
   const saJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!saJson) {
-    throw new Error('Variável FIREBASE_SERVICE_ACCOUNT não encontrada no ambiente do Render.');
+    throw new Error('Configuração do Firebase não encontrada. Use FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL e FIREBASE_PRIVATE_KEY no Render.');
   }
 
   try {
     let envVar = saJson.trim();
     
-    // 0. Suporte a Base64 (útil para evitar problemas de formatação no Render)
+    // Suporte a Base64
     if (!envVar.startsWith('{') && !envVar.startsWith("'") && !envVar.startsWith('"')) {
       try {
-        // Remove espaços ou quebras de linha que podem ter vindo do copy-paste do Base64
         const cleanBase64 = envVar.replace(/\s/g, '');
         const decoded = Buffer.from(cleanBase64, 'base64').toString('utf-8');
-        
-        // Remove caracteres invisíveis como Non-Breaking Space (\xA0) que quebram o JSON.parse
-        // Isso é comum quando o usuário copia de ferramentas de formatação
         const sanitizedDecoded = decoded.replace(/\xA0/g, ' ');
-        
         if (sanitizedDecoded.trim().startsWith('{')) {
-          console.log('Detectado JSON codificado em Base64, decodificando...');
           envVar = sanitizedDecoded.trim();
         }
-      } catch (e) {
-        // Não é base64, continua com a string original
-      }
+      } catch (e) {}
     }
     
-    // 1. Limpeza de aspas (Render às vezes adiciona aspas extras)
     if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
       envVar = envVar.slice(1, -1);
     }
     
-    // 2. Parse do JSON com múltiplas tentativas de recuperação
     let serviceAccount: any;
     try {
       serviceAccount = JSON.parse(envVar);
     } catch (parseErr) {
-      console.log('Falha no parse inicial do JSON, tentando recuperações...');
-      
+      const flattened = envVar.replace(/\r?\n|\r/g, ' ');
       try {
-        // Tentativa 1: Flatten de quebras de linha literais (comum em env vars do Render)
-        // Substituímos quebras de linha por espaços, o que é válido em JSON fora de strings
-        const flattened = envVar.replace(/\r?\n|\r/g, ' ');
         serviceAccount = JSON.parse(flattened);
-      } catch (e1) {
-        try {
-          // Tentativa 2: Tratar como string duplamente escapada
-          const unescaped = JSON.parse(`"${envVar}"`);
-          serviceAccount = JSON.parse(unescaped);
-        } catch (e2) {
-          try {
-            // Tentativa 3: Extração agressiva (pega apenas o que está entre chaves)
-            const start = envVar.indexOf('{');
-            const end = envVar.lastIndexOf('}');
-            if (start !== -1 && end !== -1) {
-              const extracted = envVar.substring(start, end + 1);
-              serviceAccount = JSON.parse(extracted);
-            } else {
-              throw new Error('Não foi possível encontrar um objeto JSON na string.');
-            }
-          } catch (e3) {
-            console.error('Todas as tentativas de parse do JSON falharam.');
-            throw new Error('O formato da FIREBASE_SERVICE_ACCOUNT não é um JSON válido. Verifique se você colou o conteúdo completo do arquivo .json.');
-          }
+      } catch (e) {
+        const start = envVar.indexOf('{');
+        const end = envVar.lastIndexOf('}');
+        if (start !== -1 && end !== -1) {
+          serviceAccount = JSON.parse(envVar.substring(start, end + 1));
+        } else {
+          throw new Error('JSON Inválido');
         }
       }
     }
 
-    if (!serviceAccount || typeof serviceAccount !== 'object') {
-      throw new Error('O conteúdo da FIREBASE_SERVICE_ACCOUNT não resultou em um objeto válido.');
-    }
+    const pId = (serviceAccount.project_id || serviceAccount.projectId || '').toString().trim();
+    const cEmail = (serviceAccount.client_email || serviceAccount.clientEmail || '').toString().trim();
+    let pKey = serviceAccount.private_key || serviceAccount.privateKey;
 
-    // 3. Normalização dos campos (Firebase aceita snake_case ou camelCase, mas vamos garantir)
-    const projectId = (serviceAccount.project_id || serviceAccount.projectId || '').toString().trim();
-    const clientEmail = (serviceAccount.client_email || serviceAccount.clientEmail || '').toString().trim();
-    let privateKey = serviceAccount.private_key || serviceAccount.privateKey;
-
-    if (!projectId || !clientEmail || !privateKey) {
-      throw new Error(`Campos obrigatórios ausentes no JSON. Certifique-se de que o arquivo contém project_id, client_email e private_key.`);
-    }
-
-    // 4. Correção crucial da Private Key (Normalização agressiva e formatação PEM)
-    if (typeof privateKey === 'string') {
+    if (typeof pKey === 'string') {
       const header = '-----BEGIN PRIVATE KEY-----';
       const footer = '-----END PRIVATE KEY-----';
-      
-      // Remove qualquer lixo ao redor
-      let cleanedKey = privateKey.trim();
-      
-      // Extrai apenas o conteúdo entre os delimitadores se eles existirem
-      if (cleanedKey.includes(header) && cleanedKey.includes(footer)) {
-        const parts = cleanedKey.split(header);
-        const subParts = parts[1].split(footer);
-        cleanedKey = subParts[0];
+      let cleaned = pKey.trim();
+      if (cleaned.includes(header) && cleaned.includes(footer)) {
+        cleaned = cleaned.split(header)[1].split(footer)[0];
       }
-      
-      // Limpa o conteúdo interno: remove \n reais, \n literais, espaços, tabs, etc.
-      cleanedKey = cleanedKey
-        .replace(/\\n/g, '') // Remove \n literais
-        .replace(/\n/g, '')   // Remove quebras de linha reais
-        .replace(/\s/g, '');  // Remove qualquer espaço, tab, etc.
-      
-      // Reconstroi no formato PEM padrão (RFC 7468) com quebras de linha a cada 64 caracteres
-      // Isso é o que o OpenSSL/Node.js espera e resolve a maioria dos problemas de "Invalid JWT Signature"
-      const matches = cleanedKey.match(/.{1,64}/g);
-      const formattedKey = matches ? matches.join('\n') : cleanedKey;
-      
-      privateKey = `${header}\n${formattedKey}\n${footer}`;
+      cleaned = cleaned.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '');
+      const matches = cleaned.match(/.{1,64}/g);
+      pKey = `${header}\n${matches ? matches.join('\n') : cleaned}\n${footer}`;
     }
-
-    // 5. Inicialização com objeto limpo
-    const credentialObj = {
-      projectId,
-      clientEmail,
-      privateKey
-    };
-
-    console.log('Firebase Admin initialization attempt at:', new Date().toISOString());
-    console.log('Iniciando Firebase Admin com Project ID:', projectId);
-    console.log('Campos do JSON detectados:', Object.keys(serviceAccount).join(', '));
 
     admin.initializeApp({
-      credential: admin.credential.cert(credentialObj)
+      credential: admin.credential.cert({
+        projectId: pId,
+        clientEmail: cEmail,
+        privateKey: pKey
+      })
     });
-    
-    console.log('Firebase Admin inicializado com sucesso!');
+    console.log('Firebase Admin inicializado com sucesso (JSON)!');
   } catch (e: any) {
-    console.error('Erro detalhado na inicialização do Firebase:', e);
-    // Retorna uma mensagem mais amigável para o usuário no app
-    if (e.message.includes('credential')) {
-      throw new Error('A chave do Firebase (FIREBASE_SERVICE_ACCOUNT) foi encontrada, mas o conteúdo dela é inválido ou está mal formatado. Verifique a "private_key".');
-    }
+    console.error('Erro fatal na inicialização do Firebase:', e.message);
     throw new Error(`Erro no Firebase: ${e.message}`);
   }
 }
