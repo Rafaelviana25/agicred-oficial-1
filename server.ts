@@ -135,9 +135,47 @@ async function sendFirebasePush(title: string, body: string, token: string) {
         title: title,
         body: body,
       },
+      // Configurações específicas para Web
+      webpush: {
+        notification: {
+          title: title,
+          body: body,
+          icon: '/logo192.png',
+          badge: '/logo192.png',
+          tag: 'overdue-contract',
+          renotify: true
+        },
+        fcmOptions: {
+          link: '/dashboard'
+        }
+      },
+      // Configurações específicas para Android
+      android: {
+        priority: 'high' as const,
+        notification: {
+          channelId: 'overdue_contracts',
+          priority: 'high' as const,
+          defaultSound: true,
+          defaultVibrateTimings: true
+        }
+      },
+      // Configurações específicas para iOS
+      apns: {
+        payload: {
+          aps: {
+            alert: {
+              title: title,
+              body: body
+            },
+            sound: 'default',
+            badge: 1
+          }
+        }
+      },
       token: token,
     };
 
+    console.log(`Enviando mensagem FCM para o token: ${token.substring(0, 15)}...`);
     const response = await admin.messaging().send(message);
     console.log('Successfully sent message:', response);
     return response;
@@ -623,7 +661,7 @@ const checkAndSendOverdueNotifications = async () => {
             'Nenhum contrato vencido foi encontrado agora, mas é assim que a notificação aparecerá!',
             pushToken
           );
-          res.json({ success: true, message: 'Nenhum contrato vencido encontrado. Uma notificação de simulação foi enviada para teste.' });
+          res.json({ success: true, message: 'Nenhum contrato vencido encontrado. Uma notificação de simulação foi enviada para teste.', simulated: true });
         } catch (pushError: any) {
           throw pushError;
         }
