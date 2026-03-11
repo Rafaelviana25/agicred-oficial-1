@@ -2384,41 +2384,6 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               >
                 <Bell size={14} className="mr-2"/> TESTAR NOTIFICAÇÃO NO MEU CELULAR
               </button>
-
-              <button 
-                type="button" 
-                onClick={async () => {
-                  try {
-                    // In development, API_URL is empty (same origin). In production, it might be set or empty.
-                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
-                    console.log(`Triggering notification check at: ${API_URL}/api/trigger-overdue-check`);
-                    
-                    const res = await fetch(`${API_URL}/api/trigger-overdue-check`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    if (!res.ok) {
-                      const text = await res.text();
-                      console.error('Server error:', text);
-                      throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
-                    }
-                    
-                    const data = await res.json();
-                    alert(`Varredura concluída: ${data.message}`);
-                  } catch (err: any) {
-                    console.error('Fetch error:', err);
-                    let msg = err.message;
-                    if (msg === 'Failed to fetch') {
-                      msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
-                    }
-                    alert(`Erro ao disparar: ${msg}`);
-                  }
-                }} 
-                className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-indigo-50 text-indigo-600 shadow-sm hover:bg-indigo-100 active:scale-95 border-indigo-200"
-              >
-                <Bell size={14} className="mr-2"/> VARREDURA DE VENCIDOS AGORA
-              </button>
             </div>
           )}
 
