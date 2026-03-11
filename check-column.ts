@@ -1,28 +1,30 @@
-VITE_SUPABASE_URL=https://molhsshtzrvkywoqhxho.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjU2MzgsImV4cCI6MjA4MzgwMTYzOH0.UcyQP7pUKtEO-3G43TEscPtrpcVsRpZJvRBmbSVUH6s
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyNTYzOCwiZXhwIjoyMDgzODAxNjM4fQ.3u57BBPtEuDKTJNDN1giPLgnJ4_KU9h-UqGgVFAB0L4
-MERCADO_PAGO_ACCESS_TOKEN=APP_USR-2064886398402150-022716-fe6f4981f312fbf4fd170ca11d630f4a-14757248
-APP_URL=https://agicred-9wto.onrender.com
-VITE_API_URL=https://agicred-9wto.onrender.com
-VITE_ONESIGNAL_APP_ID=75808b28-ebd4-4db0-a3db-55a3360eab13
-ONESIGNAL_REST_API_KEY=os_v2_app_owaiwkhl2rg3bi63kwrtmdvlcpwextp6bm4uhru5nzj5nouqmonl2zz46by56ymws6myeufifnoxdd647lsfsjk6o2lur7gpbnoo5di
-VITE_FIREBASE_AUTH_DOMAIN=agicred-push.firebaseapp.com
-VITE_FIREBASE_STORAGE_BUCKET=agicred-push.firebasestorage.app
-VITE_FIREBASE_PROJECT_ID=agicred-push
-VITE_FIREBASE_API_KEY=AIzaSyColFxGzISwZt3spyIm07tpSUqNaK3J9-s
-VITE_FIREBASE_MESSAGING_SENDER_ID=254591707488
-VITE_FIREBASE_VAPID_KEY=BAgeumDuvOeRjK8YCBBaTFTvr321vUkldNVxIGHqyKfBdQZJj30XSZHzYs_uSpVqEXY0-6Qdlh-RC73ahiKO9Is
-FIREBASE_SERVICE_ACCOUNT={
-  "type": "service_account",
-  "project_id": "agicred-push",
-  "private_key_id": "2be07b4220625c53c64ab39eddfa52f006dc75c4",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEugIBADANBgkqhkiG9w0BAQEFAASCBKQwggSgAgEAAoIBAQDQ9Oi4J7pX/w1O\nqhRJ0ucR0fP6CdsL4ptkNKkjfeJG+rl9grr7pl1s3UX3qTFXpmMUR1kXqJl8hIOZ\n6/DLHAvTBb0XFcdNyL0iuUuvr8xUabO0YbdMYsEJVxq0xl3vm6u4uj0IekjFm8gp\nIFuCJzqvErTS4cltb0wteeAUbYRCq7tQsRh7KOodYuNM4ky6pXCzeConKQxZig+n\nEfKSi6CSCtRkpLtwce/+afQEXCfCGlR7rYnZQxvInI5DjRm5J6Gn1jkl5PQ71N91\nodcaLD8+Zc8GZbQj+diGS5/IMLe4xZx/rDKIRkjWuwsQK7+SW6fm/0F6qBSK64g1\nrgTfV4GLAgMBAAECgf9D4fcN3ITXvC7BNNUNJqGVUx/E8G647bqNqI30zxsznpWk\nBf8OFyiYCp/a//GHsrDSuwW2fzoIZFmx0h89Mgn6rrfp8qlMxmoAszG4tuPVMyxY\n7WXJlaDLPVZFDtcgKvJz5gzt3swau6vLBeK0kF9VgOjoRBxWm6b5Hx7XhBHzlkAJ\ngh5LMeGBJGHDasAvT67ZuwVPekuUYtz89tnmo3Dktwnmpc9ELBBIEfm8WYv/letx\nZH72ONysyQoUuylsPd0S31fcT3p2lng2SFBjlzvNvNw/hjBn6ks0qbKNLPfEN2P7\ngeEWgFPSJ7Q/boGH54OZT9HExh9DeLSRGXs0AY0CgYEA+fh6xrEjGfu1K3vJeyL9\nU5JbfSaA7Xys5uCd/ao+k+bi08C5jfAkQQwaPOvl3nC4evp33n04T6l9+mu3iTS2\nSd+QGcE20qiDsZxw68jmksAHUNnG2gCPCtaP6xiV71exoZ1xei/23NTUEsm740WF\nzABLWwPa26qJqIf9c+KaXrUCgYEA1f8tHpU+OLA6oxLezbAXVZPIbDwsJ+uyPa7f\nKSNUt+vUlpmY9VVD8kut1XLHgCp/WCJdXEntlYttb9RvwESclONAONcgAXA6TLuv\njnHiy5mlz8n2Qn9w263Qhl3pN1740b4eapW6ZFioTbyHMRCTBvxF2edhT1WTu6YU\n+LZ+Rz8CgYBK9s+rIphKRIgygC8ONJIQLAYv5AoqLoeTvazj09hsdoNzyYpcHLZi\no4SC3KPVL6zDhLXKDXeDvGrBXOhvx1UblmYasy0Dw/GqpCXhMCClxdzrzEOsQRqk\nv2/tqzPb0Uq+Ev9jC1tXIqRu9fzYzZKweS4gH2nVErGxzwadaEmvOQKBgGiGYnh8\nt06jLZD3p6JaL5uaOpw7a+n34zDj2JbUbg4D/+urjJ3QjwarVnZawP1mRJs89dMd\nPRH9b2/fGNKV8NF8iqL42OY69g8C4cY29Gs0Wlw7LrDeZLa4mJD5D+/+0JRKQ7sV\n9VwMPfDydCpQCTCxSkEcFljU2PsgLUAqi1WrAoGAW83DxrqXi+J8shjm4lbHeb2z\n0vlEtoQmfixs8pzHU33Ob5enbTrQ6io4i/b+xE5qc848F2iwe1uMhbcrxrqUQ9UM\nWxjlll1xlFuDLgX/XaCe8TvOgRYQxTEMmgnzZWuJ/cf86iKlc/hG8c5aUEGRPn2X\nbRpn+TkGvIEJBV96g6M=\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-fbsvc@agicred-push.iam.gserviceaccount.com",
-  "client_id": "100741847250453827276",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40agicred-push.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function main() {
+  console.log('Trying to add column via RPC exec_sql...');
+  
+  const sql = `ALTER TABLE contracts ADD COLUMN IF NOT EXISTS payment_history JSONB;`;
+  
+  const { data, error } = await supabase.rpc('exec_sql', { sql });
+  
+  if (error) {
+    console.log('RPC exec_sql failed:', error.message);
+    // Try another common name for sql execution function
+    const { error: error2 } = await supabase.rpc('run_sql', { sql });
+    if (error2) {
+        console.log('RPC run_sql failed:', error2.message);
+    } else {
+        console.log('RPC run_sql success!');
+    }
+  } else {
+    console.log('RPC exec_sql success!');
+  }
 }
-VITE_FIREBASE_APP_ID=1:254591707488:web:f5b2859674db4411885605
+
+main();

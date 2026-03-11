@@ -1,17 +1,16 @@
-import { CapacitorConfig } from '@capacitor/cli';
 
-const config: CapacitorConfig = {
-  appId: 'com.agicred.app',
-  appName: 'Agicred',
-  webDir: 'dist',
-  bundledWebRuntime: false,
-  plugins: {
-    StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#7c3aed',
-      overlaysWebView: false,
-    }
-  }
-};
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 
-export default config;
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

@@ -70,6 +70,7 @@ export const setupPushNotifications = async (userId: string): Promise<void> => {
       }
 
       const permission = await Notification.requestPermission();
+      console.log("Status da permissão de notificação web:", permission);
       
       if (permission === "granted") {
         console.log("Permissão de notificação web concedida.");

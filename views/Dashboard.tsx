@@ -2410,9 +2410,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 type="button" 
                 onClick={async () => {
                   try {
-                    const API_URL = Capacitor.isNativePlatform() 
-                      ? ((import.meta as any).env?.VITE_API_URL || 'https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app')
-                      : '';
+                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
                     console.log(`Triggering test push at: ${API_URL}/api/test-push`);
                     
                     const res = await fetch(`${API_URL}/api/test-push`, {
@@ -2438,7 +2436,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     }
                     
                     const data = await res.json();
-                    alert(`Sucesso: ${data.message}`);
+                    
+                    if (data.sentCount > 0) {
+                      alert(`Sucesso! Foram enviadas ${data.sentCount} notificações reais para os seus contratos vencidos. Verifique as notificações do seu celular.`);
+                    } else if (data.simulated) {
+                      alert(`Nenhum contrato vencido encontrado, então enviamos uma NOTIFICAÇÃO DE TESTE simulada para o seu celular. Verifique agora!`);
+                    } else {
+                      alert(`Sucesso: ${data.message}`);
+                    }
                   } catch (err: any) {
                     let msg = err.message;
                     if (msg === 'Failed to fetch') {
@@ -2454,6 +2459,9 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               >
                 <Bell size={14} className="mr-2"/> TESTAR NOTIFICAÇÃO NO MEU CELULAR
               </button>
+              <p className="text-[8px] text-slate-400 text-center font-medium uppercase tracking-tighter mt-2">
+                DICA: SE NÃO RECEBER, DESATIVE E ATIVE AS NOTIFICAÇÕES ACIMA PARA REFRESCAR O TOKEN.
+              </p>
             </div>
           )}
 
@@ -2464,9 +2472,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               onClick={async () => {
                 setValidating(true);
                 try {
-                  const API_URL = Capacitor.isNativePlatform() 
-                    ? ((import.meta as any).env?.VITE_API_URL || 'https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app')
-                    : '';
+                  const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
                   const res = await fetch(`${API_URL}/api/debug/test-upgrade`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
