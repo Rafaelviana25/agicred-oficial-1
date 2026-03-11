@@ -7,6 +7,8 @@ import Register from './views/Register';
 import Dashboard from './views/Dashboard';
 import SchemaError from './views/SchemaError';
 import { UserProfile } from './types';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -17,6 +19,17 @@ const App: React.FC = () => {
   const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
 
   useEffect(() => {
+    // Configurar Barra de Status no Android/iOS
+    if (Capacitor.isNativePlatform()) {
+      try {
+        StatusBar.setStyle({ style: Style.Dark }); // Texto branco
+        StatusBar.setBackgroundColor({ color: '#7c3aed' }); // Fundo roxo
+        StatusBar.setOverlaysWebView({ overlay: false });
+      } catch (err) {
+        console.error('Erro ao configurar StatusBar:', err);
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error("Session error:", error);

@@ -205,9 +205,9 @@ Pelo menos um número (0 a 9)`;
   if (mode === 'forgot') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
-        <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
+        <div className="w-[90%] max-w-sm glass-panel rounded-3xl p-6 lg:p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
-            <AgicredLogo className="mx-auto" />
+            <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
             <p className="text-[9px] text-violet-600 tracking-[0.3em] mt-2">RECUPERAÇÃO DE ACESSO</p>
           </div>
 
@@ -254,7 +254,7 @@ Pelo menos um número (0 a 9)`;
                 </div>
                 <button
                   type="submit" disabled={loading}
-                  className="w-full primary-gradient text-white py-4 rounded-xl font-black text-[9px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
+                  className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
                 >
                   {loading ? 'ALTERANDO...' : 'ALTERAR SENHA'}
                 </button>
@@ -288,7 +288,7 @@ Pelo menos um número (0 a 9)`;
               </div>
               <button
                 type="submit" disabled={loading}
-                className="w-full primary-gradient text-white py-4 rounded-xl font-black text-[9px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
+                className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
               >
                 {loading ? 'VERIFICANDO...' : 'VERIFICAR TOKEN'}
               </button>
@@ -313,7 +313,7 @@ Pelo menos um número (0 a 9)`;
               </div>
               <button
                 type="submit" disabled={loading}
-                className="w-full primary-gradient text-white py-4 rounded-xl font-black text-[9px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
+                className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
               >
                 {loading ? 'ENVIANDO...' : 'ENVIAR TOKEN'}
               </button>
@@ -337,9 +337,9 @@ Pelo menos um número (0 a 9)`;
   if (mode === 'change') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
-        <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
+        <div className="w-[90%] max-w-sm glass-panel rounded-3xl p-6 lg:p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
-            <AgicredLogo className="mx-auto" />
+            <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
             <p className="text-[9px] text-violet-600 tracking-[0.3em] mt-2">ALTERAR SENHA</p>
           </div>
 
@@ -409,7 +409,7 @@ Pelo menos um número (0 a 9)`;
               </div>
               <button
                 type="submit" disabled={loading}
-                className="w-full primary-gradient text-white py-4 rounded-xl font-black text-[9px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
+                className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] tracking-widest shadow-lg hover:shadow-violet-500/25 transition-all"
               >
                 {loading ? 'PROCESSANDO...' : 'CONFIRMAR ALTERAÇÃO'}
               </button>
@@ -432,55 +432,55 @@ Pelo menos um número (0 a 9)`;
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       
-      <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 lg:p-12 space-y-8 lg:space-y-10 animate-in fade-in zoom-in duration-700 relative z-10 shadow-2xl">
+      <div className="w-[90%] max-w-sm glass-panel rounded-3xl p-6 lg:p-8 space-y-6 animate-in fade-in zoom-in duration-700 relative z-10 shadow-2xl">
         <div className="text-center space-y-2">
-          <AgicredLogo className="mx-auto scale-110 lg:scale-125" />
-          <div className="h-1 w-12 bg-violet-500 mx-auto rounded-full mt-4 opacity-60"></div>
+          <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
+          <div className="h-1 w-8 bg-violet-500 mx-auto rounded-full mt-2 opacity-60"></div>
         </div>
 
         {error && (
-          <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl text-[10px] lg:text-xs font-black border border-rose-200 uppercase tracking-widest text-center leading-tight shadow-sm">
+          <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-[9px] font-black border border-rose-200 uppercase tracking-widest text-center leading-tight shadow-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5 lg:space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 block">OPERADOR</label>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">OPERADOR</label>
             <div className="relative">
-              <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="email" required
-                className="w-full pl-14 pr-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 lowercase shadow-inner"
+                className="w-full pl-11 pr-4 py-3 glass-input rounded-xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs outline-none placeholder:text-slate-400 lowercase shadow-inner"
                 placeholder="e-mail"
                 value={email} onChange={e => setEmail(e.target.value.toLowerCase())}
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 block">SENHA</label>
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">SENHA</label>
             <div className="relative">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type={showPassword ? "text" : "password"} required
-                className="w-full pl-14 pr-14 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 shadow-inner"
+                className="w-full pl-11 pr-11 py-3 glass-input rounded-xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs outline-none placeholder:text-slate-400 shadow-inner"
                 placeholder="••••••••"
                 value={password} onChange={e => setPassword(e.target.value)}
               />
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-2">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${rememberMe ? 'bg-violet-500 border-violet-500' : 'border-slate-300 bg-slate-50'}`}>
-                {rememberMe && <div className="w-2 h-2 bg-white rounded-full"></div>}
+          <div className="flex items-center justify-between px-1 pt-1">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${rememberMe ? 'bg-violet-500 border-violet-500' : 'border-slate-300 bg-slate-50'}`}>
+                {rememberMe && <div className="w-1.5 h-1.5 bg-white rounded-sm"></div>}
               </div>
               <input 
                 type="checkbox" 
@@ -488,35 +488,35 @@ Pelo menos um número (0 a 9)`;
                 checked={rememberMe} 
                 onChange={() => setRememberMe(!rememberMe)} 
               />
-              <span className="text-[10px] lg:text-xs font-black text-slate-500 group-hover:text-slate-700 tracking-widest">LEMBRAR USUÁRIO</span>
+              <span className="text-[9px] font-black text-slate-500 group-hover:text-slate-700 tracking-widest">LEMBRAR USUÁRIO</span>
             </label>
             
             <button 
               type="button"
               onClick={() => setMode('forgot')}
-              className="text-[10px] lg:text-xs font-black text-violet-600 hover:text-violet-500 tracking-widest"
+              className="text-[9px] font-black text-violet-600 hover:text-violet-500 tracking-widest"
             >
-              ESQUECI MINHA SENHA
+              ESQUECI A SENHA
             </button>
           </div>
 
           <button
             type="submit" disabled={loading}
-            className="w-full primary-gradient text-white py-5 lg:py-6 rounded-2xl lg:rounded-3xl font-black text-xs lg:text-sm uppercase tracking-[0.2em] shadow-2xl hover:shadow-violet-500/40 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group mt-6 h-16 lg:h-20"
+            className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg hover:shadow-violet-500/40 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
           >
             {loading ? 'AUTENTICANDO...' : 'ACESSAR AGICRED'}
-            {!loading && <ArrowRight size={18} />}
+            {!loading && <ArrowRight size={14} />}
           </button>
         </form>
 
-        <div className="space-y-4 text-center pt-4">
+        <div className="space-y-3 text-center pt-2">
           <button 
             onClick={() => setMode('change')}
-            className="text-slate-400 text-[10px] lg:text-xs font-black uppercase tracking-widest hover:text-slate-900 transition-colors block mx-auto"
+            className="text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors block mx-auto"
           >
             TROCAR DE SENHA
           </button>
-          <button onClick={onSwitch} className="text-slate-400 text-[10px] lg:text-xs font-black uppercase tracking-widest hover:text-slate-900 transition-colors">
+          <button onClick={onSwitch} className="text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors">
             CRIAR CONTA DE OPERADOR
           </button>
         </div>

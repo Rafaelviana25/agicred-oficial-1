@@ -98,11 +98,11 @@ Pelo menos um número (0 a 9)`;
       <div className="absolute top-[10%] right-[-5%] w-[30%] h-[30%] bg-violet-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[10%] left-[-5%] w-[30%] h-[30%] bg-blue-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       
-      <div className="max-w-md lg:max-w-2xl w-full glass-panel rounded-3xl p-8 lg:p-12 space-y-8 lg:space-y-10 animate-in fade-in duration-700 relative z-10 shadow-2xl">
-        <div className="text-center space-y-4 lg:space-y-6">
-          <AgicredLogo className="mx-auto scale-90 lg:scale-110" />
+      <div className="max-w-md lg:max-w-xl w-[90%] glass-panel rounded-3xl p-6 lg:p-8 space-y-6 animate-in fade-in duration-700 relative z-10 shadow-2xl">
+        <div className="text-center space-y-3 lg:space-y-4">
+          <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
           <div className="space-y-1">
-            <p className="text-violet-600 font-bold text-[10px] lg:text-xs tracking-[0.4em] opacity-80 flex items-center justify-center gap-2">
+            <p className="text-violet-600 font-bold text-[9px] lg:text-[10px] tracking-[0.4em] opacity-80 flex items-center justify-center gap-2">
               <UserCheck size={14} /> CREDENCIAMENTO DE OPERADOR
             </p>
           </div>
@@ -129,39 +129,39 @@ Pelo menos um número (0 a 9)`;
         ) : (
           <>
             {error && (
-              <div className="bg-rose-50 text-rose-600 p-5 rounded-2xl text-[10px] lg:text-xs font-black border border-rose-200 uppercase tracking-widest text-center leading-tight whitespace-pre-line shadow-sm">
+              <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-[9px] font-black border border-rose-200 uppercase tracking-widest text-center leading-tight whitespace-pre-line shadow-sm">
                 {error.toUpperCase()}
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="space-y-5 lg:space-y-6">
-              <div className="space-y-5 lg:space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">NOME DO OPERADOR</label>
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">NOME DO OPERADOR</label>
                   <input 
                     required 
-                    className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
+                    className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
                     placeholder="NOME COMPLETO"
                     onChange={(e) => setForm({ ...form, fullName: e.target.value.toUpperCase() })} 
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">CPF / ID</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">CPF / ID</label>
                     <input 
                       required 
-                      className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
+                      className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
                       placeholder="000.000.000-00" 
                       value={form.cpf}
                       onChange={(e) => setForm({ ...form, cpf: applyCPFMask(e.target.value) })} 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">WHATSAPP</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">WHATSAPP</label>
                     <input 
                       required 
-                      className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
+                      className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition" 
                       placeholder="(00) 0-0000-0000" 
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: applyPhoneMask(e.target.value) })} 
@@ -169,26 +169,26 @@ Pelo menos um número (0 a 9)`;
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">E-MAIL DE ACESSO</label>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">E-MAIL DE ACESSO</label>
                   <input 
                     type="email" 
                     required 
-                    className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition lowercase" 
+                    className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition lowercase" 
                     placeholder="exemplo@agicred.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })} 
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 lg:gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">SENHA DE SEGURANÇA</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">SENHA DE SEGURANÇA</label>
                     <div className="relative">
                       <input 
                         type={showPassword ? "text" : "password"}
                         required 
-                        className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition pr-14" 
+                        className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition pr-11" 
                         placeholder="••••••••"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })} 
@@ -196,20 +196,20 @@ Pelo menos um número (0 a 9)`;
                       <button 
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
                       >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] lg:text-xs font-black text-slate-500 uppercase tracking-widest ml-4 mb-1 block">CONFIRMAR SENHA</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">CONFIRMAR SENHA</label>
                     <div className="relative">
                       <input 
                         type={showConfirmPassword ? "text" : "password"}
                         required 
-                        className="w-full px-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl outline-none text-slate-900 font-bold text-xs lg:text-sm placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition pr-14" 
+                        className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition pr-11" 
                         placeholder="••••••••"
                         value={form.confirmPassword}
                         onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} 
@@ -217,9 +217,9 @@ Pelo menos um número (0 a 9)`;
                       <button 
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-violet-600 transition-colors"
                       >
-                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
@@ -229,14 +229,14 @@ Pelo menos um número (0 a 9)`;
               <button 
                 type="submit" 
                 disabled={loading} 
-                className="w-full primary-gradient text-white py-5 lg:py-6 rounded-2xl lg:rounded-3xl font-black text-xs lg:text-sm uppercase tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all mt-6 hover:shadow-violet-500/40 h-16 lg:h-20"
+                className="w-full primary-gradient text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-[0.98] transition-all mt-4 hover:shadow-violet-500/40"
               >
                 {loading ? 'PROCESSANDO...' : 'FINALIZAR CADASTRO'}
               </button>
             </form>
 
-            <div className="text-center pt-6 border-t border-slate-200">
-              <button onClick={onSwitch} className="text-slate-400 text-[10px] lg:text-xs font-black uppercase tracking-widest hover:text-slate-900 transition-colors flex items-center justify-center gap-2 mx-auto">
+            <div className="text-center pt-4 border-t border-slate-200">
+              <button onClick={onSwitch} className="text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors flex items-center justify-center gap-2 mx-auto">
                 <ArrowLeft size={14} /> JÁ SOU CADASTRADO
               </button>
             </div>
