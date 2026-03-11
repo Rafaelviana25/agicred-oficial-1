@@ -1,151 +1,89 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from './services/supabase';
-import { setupPushNotifications } from './services/pushNotifications';
-import Login from './views/Login';
-import Register from './views/Register';
-import Dashboard from './views/Dashboard';
-import SchemaError from './views/SchemaError';
-import { UserProfile } from './types';
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { Capacitor } from '@capacitor/core';
-
-const App: React.FC = () => {
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<'login' | 'register'>('login');
-  const [hasSchemaError, setHasSchemaError] = useState(false);
-  const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
-
-  useEffect(() => {
-    // Configurar Barra de Status no Android/iOS
-    if (Capacitor.isNativePlatform()) {
-      try {
-        StatusBar.setStyle({ style: Style.Dark }); // Texto branco
-        StatusBar.setBackgroundColor({ color: '#7c3aed' }); // Fundo roxo
-        StatusBar.setOverlaysWebView({ overlay: false });
-      } catch (err) {
-        console.error('Erro ao configurar StatusBar:', err);
-      }
-    }
-
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error("Session error:", error);
-        supabase.auth.signOut().catch(console.error);
-      }
-      setSession(session);
-      if (session) fetchProfile(session.user.id, session);
-      setLoading(false);
-    }).catch(err => {
-      console.error("Session catch error:", err);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsRecoveringPassword(true);
-      }
-      if (event === 'SIGNED_OUT') {
-        setIsRecoveringPassword(false);
-      }
-      setSession(session);
-      if (session && event !== 'PASSWORD_RECOVERY') fetchProfile(session.user.id, session);
-      else if (!session) {
-        setProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string, currentSession: any) => {
-    // Usamos maybeSingle para não dar erro caso não encontre nada
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-      const fallbackProfile = {
-      id: userId,
-      email: currentSession?.user?.email || '',
-      full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
-      cpf: currentSession?.user?.user_metadata?.cpf || '',
-      phone: currentSession?.user?.user_metadata?.phone || '',
-      is_pro: false,
-      created_at: new Date().toISOString()
-    };
-
-    if (error) {
-      console.error('Error fetching profile:', error);
-      if (error.code === 'PGRST205') {
-        setHasSchemaError(true);
-      } else {
-        setProfile(fallbackProfile);
-      }
-      return;
-    }
-
-    if (data) {
-      setProfile(data);
-      setHasSchemaError(false);
-      setupPushNotifications(userId);
-    } else {
-      // Usuário logado mas sem registro na tabela profiles
-      // Tentar criar perfil básico automaticamente
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert(fallbackProfile)
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error auto-creating profile:', createError);
-        // Se falhar (ex: race condition com Register.tsx), aguarda um pouco e tenta buscar novamente
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data: retryData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-          
-        if (retryData) {
-          setProfile(retryData);
-        } else {
-          // Fallback final para garantir que o app não quebre
-          setProfile(fallbackProfile);
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icon-512x512.png">
+    <title>AGICRED | Gestão de Empréstimos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fintech-bg: #F8FAFC;
+            --fintech-card: #FFFFFF;
+            --fintech-primary: #7C3AED;
+            --fintech-secondary: #3B82F6;
         }
-      } else {
-        setProfile(newProfile);
-      }
-    }
-  };
-
-  const handleProfileComplete = () => {
-    if (session) fetchProfile(session.user.id, session);
-  };
-
-  if (hasSchemaError) {
-    return <SchemaError />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  if (!session || isRecoveringPassword) {
-    return view === 'login' 
-      ? <Login onSwitch={() => setView('register')} onRecoveryMode={(mode) => setIsRecoveringPassword(mode)} /> 
-      : <Register onSwitch={() => setView('login')} />;
-  }
-
-  return <Dashboard userProfile={profile} onUpgradeSuccess={handleProfileComplete} />;
-};
-
-export default App;
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--fintech-bg);
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.05), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+            background-attachment: fixed;
+        }
+        html {
+            height: -webkit-fill-available;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            color: #0F172A;
+        }
+        .glass-input:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+            background: #FFFFFF;
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .pb-safe {
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+        .pt-safe {
+            padding-top: env(safe-area-inset-top);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Hide spin buttons for number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -12,21 +12,32 @@ dotenv.config();
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
     let envVar = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+    
     // Remove aspas simples ou duplas extras no início e no fim, se houver
     if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
-      if (!envVar.startsWith('"{') && !envVar.endsWith('}"')) {
-         envVar = envVar.slice(1, -1);
-      }
+      envVar = envVar.slice(1, -1);
     }
     
     // Tenta consertar escapes se a string vier muito escapada
     if (envVar.includes('\\"')) {
       try {
-        envVar = JSON.parse(`"${envVar}"`); // Unescape
+        const unescaped = JSON.parse(`"${envVar}"`);
+        if (unescaped.startsWith('{')) envVar = unescaped;
       } catch (e) {}
     }
 
     const serviceAccount = JSON.parse(envVar);
+    
+    // Corrigir quebras de linha na chave privada se necessário
+    if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
+    // Validação básica dos campos obrigatórios
+    if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+      throw new Error('O JSON da FIREBASE_SERVICE_ACCOUNT está incompleto. Faltam campos obrigatórios (project_id, private_key ou client_email).');
+    }
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
