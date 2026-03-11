@@ -20,22 +20,64 @@ function initializeFirebaseAdmin() {
   try {
     let envVar = saJson.trim();
     
+    // 0. Suporte a Base64 (útil para evitar problemas de formatação no Render)
+    if (!envVar.startsWith('{') && !envVar.startsWith("'") && !envVar.startsWith('"')) {
+      try {
+        // Remove espaços ou quebras de linha que podem ter vindo do copy-paste do Base64
+        const cleanBase64 = envVar.replace(/\s/g, '');
+        const decoded = Buffer.from(cleanBase64, 'base64').toString('utf-8');
+        
+        // Remove caracteres invisíveis como Non-Breaking Space (\xA0) que quebram o JSON.parse
+        // Isso é comum quando o usuário copia de ferramentas de formatação
+        const sanitizedDecoded = decoded.replace(/\xA0/g, ' ');
+        
+        if (sanitizedDecoded.trim().startsWith('{')) {
+          console.log('Detectado JSON codificado em Base64, decodificando...');
+          envVar = sanitizedDecoded.trim();
+        }
+      } catch (e) {
+        // Não é base64, continua com a string original
+      }
+    }
+    
     // 1. Limpeza de aspas (Render às vezes adiciona aspas extras)
     if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
       envVar = envVar.slice(1, -1);
     }
     
-    // 2. Parse do JSON
+    // 2. Parse do JSON com múltiplas tentativas de recuperação
     let serviceAccount: any;
     try {
       serviceAccount = JSON.parse(envVar);
     } catch (parseErr) {
-      // Tenta um segundo parse caso a string esteja duplamente escapada
+      console.log('Falha no parse inicial do JSON, tentando recuperações...');
+      
       try {
-        const unescaped = JSON.parse(`"${envVar}"`);
-        serviceAccount = JSON.parse(unescaped);
-      } catch (e) {
-        throw new Error('O formato da FIREBASE_SERVICE_ACCOUNT não é um JSON válido. Verifique se você colou o conteúdo completo do arquivo .json.');
+        // Tentativa 1: Flatten de quebras de linha literais (comum em env vars do Render)
+        // Substituímos quebras de linha por espaços, o que é válido em JSON fora de strings
+        const flattened = envVar.replace(/\r?\n|\r/g, ' ');
+        serviceAccount = JSON.parse(flattened);
+      } catch (e1) {
+        try {
+          // Tentativa 2: Tratar como string duplamente escapada
+          const unescaped = JSON.parse(`"${envVar}"`);
+          serviceAccount = JSON.parse(unescaped);
+        } catch (e2) {
+          try {
+            // Tentativa 3: Extração agressiva (pega apenas o que está entre chaves)
+            const start = envVar.indexOf('{');
+            const end = envVar.lastIndexOf('}');
+            if (start !== -1 && end !== -1) {
+              const extracted = envVar.substring(start, end + 1);
+              serviceAccount = JSON.parse(extracted);
+            } else {
+              throw new Error('Não foi possível encontrar um objeto JSON na string.');
+            }
+          } catch (e3) {
+            console.error('Todas as tentativas de parse do JSON falharam.');
+            throw new Error('O formato da FIREBASE_SERVICE_ACCOUNT não é um JSON válido. Verifique se você colou o conteúdo completo do arquivo .json.');
+          }
+        }
       }
     }
 
@@ -54,16 +96,29 @@ function initializeFirebaseAdmin() {
 
     // 4. Correção crucial da Private Key
     if (typeof privateKey === 'string') {
+      // Remove espaços extras que podem ter vindo de um "flatten" acidental
+      privateKey = privateKey.trim();
+      
       // Substitui \n literal por quebras de linha reais
       privateKey = privateKey.replace(/\\n/g, '\n');
       
-      // Garante os delimitadores PEM
+      // Se a chave não tiver quebras de linha mas for longa, pode ser que o Render tenha removido
+      // No entanto, o Firebase Admin costuma aceitar a chave se os delimitadores estiverem corretos
+      
+      // Garante os delimitadores PEM corretos
       if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
         privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
       }
       if (!privateKey.includes('-----END PRIVATE KEY-----')) {
         privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
       }
+      
+      // Garante que os delimitadores tenham quebras de linha depois/antes
+      privateKey = privateKey.replace('-----BEGIN PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----\n');
+      privateKey = privateKey.replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
+      
+      // Remove múltiplas quebras de linha seguidas
+      privateKey = privateKey.replace(/\n+/g, '\n');
     }
 
     // 5. Inicialização com objeto limpo
