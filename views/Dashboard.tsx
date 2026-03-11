@@ -50,6 +50,9 @@ import {
 import { AgicredLogo } from '../components/AgicredLogo';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface DashboardProps {
   userProfile: UserProfile | null;
@@ -104,24 +107,67 @@ const DatePickerPopup = ({ selectedDate, onDateSelect, onClose }: { selectedDate
   );
 };
 
-const OverdueNotification = ({ count, onClick, onClose }: { count: number, onClick: () => void, onClose: () => void }) => (
-  <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm animate-in slide-in-from-top-4 fade-in duration-300">
-    <div className="bg-rose-600 text-white p-4 rounded-2xl shadow-2xl flex items-start gap-3 border border-rose-500">
-      <div className="bg-white/20 p-2 rounded-full shrink-0">
-        <AlertCircle size={24} className="text-white" />
+const OverdueNotification = ({ count, onClick, onClose }: { count: number, onClick: () => void, onClose: () => void }) => {
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [width, setWidth] = useState(100);
+
+  useEffect(() => {
+    // Start the progress bar animation after a tiny delay to ensure CSS transition triggers
+    const widthTimer = setTimeout(() => {
+      setWidth(0);
+    }, 50);
+
+    const timer = setTimeout(() => {
+      setIsLeaving(true);
+      setTimeout(onClose, 500); // Wait for slide up animation
+    }, 5000);
+
+    return () => {
+      clearTimeout(widthTimer);
+      clearTimeout(timer);
+    };
+  }, [onClose]);
+
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsLeaving(true);
+    setTimeout(onClose, 500);
+  };
+
+  const handleClick = () => {
+    setIsLeaving(true);
+    setTimeout(onClick, 500);
+  };
+
+  return (
+    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm transition-all duration-500 ease-in-out ${isLeaving ? '-translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-top-10 fade-in'}`}>
+      <div className="bg-rose-600 text-white p-4 rounded-2xl shadow-2xl flex items-start gap-3 border border-rose-500 relative overflow-hidden cursor-pointer" onClick={handleClick}>
+        <div className="bg-white/20 p-2 rounded-full shrink-0 z-10">
+          <AlertCircle size={24} className="text-white" />
+        </div>
+        <div className="flex-1 pt-0.5 z-10">
+          <h4 className="font-black text-sm uppercase tracking-tight leading-none mb-1">Contratos Vencidos!</h4>
+          <p className="text-xs font-medium text-rose-100 leading-snug">
+            Você tem {count} contrato{count > 1 ? 's' : ''} com parcelas em atraso. Toque para verificar.
+          </p>
+        </div>
+        <button onClick={handleClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0 z-10">
+          <X size={16} className="text-white" />
+        </button>
+        {/* Timer Bar */}
+        <div className="absolute bottom-0 left-0 h-1.5 bg-rose-800 w-full">
+          <div 
+            className="h-full bg-white" 
+            style={{ 
+              width: `${width}%`, 
+              transition: 'width 5s linear' 
+            }} 
+          />
+        </div>
       </div>
-      <div className="flex-1 pt-0.5 cursor-pointer" onClick={onClick}>
-        <h4 className="font-black text-sm uppercase tracking-tight leading-none mb-1">Contratos Vencidos!</h4>
-        <p className="text-xs font-medium text-rose-100 leading-snug">
-          Você tem {count} contrato{count > 1 ? 's' : ''} com parcelas em atraso. Toque para verificar.
-        </p>
-      </div>
-      <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0">
-        <X size={16} className="text-white" />
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>('overview');
@@ -1851,7 +1897,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     setPushEnabled(!!user.push_token);
   }, [user.push_token]);
 
-  const generateReport = () => {
+  const generateReport = async () => {
     if (!user.is_pro) {
       setShowProMessage(true);
       return;
@@ -2201,7 +2247,29 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
       
       const safeFileName = user.full_name ? user.full_name.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'usuario';
       const fileName = `relatorio_geral_${safeFileName}_${dateStr.replace(/\//g, '-')}.pdf`;
-      doc.save(fileName);
+      
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const pdfBase64 = doc.output('datauristring').split(',')[1];
+          const result = await Filesystem.writeFile({
+            path: fileName,
+            data: pdfBase64,
+            directory: Directory.Documents,
+          });
+          
+          await Share.share({
+            title: 'Relatório Geral',
+            text: 'Aqui está o seu relatório geral.',
+            url: result.uri,
+            dialogTitle: 'Compartilhar ou Salvar Relatório'
+          });
+        } catch (fsError) {
+          console.error('Erro ao salvar arquivo no dispositivo:', fsError);
+          alert('Erro ao salvar arquivo no dispositivo.');
+        }
+      } else {
+        doc.save(fileName);
+      }
     } catch (err) {
       console.error(err);
       alert('Erro ao gerar relatório');

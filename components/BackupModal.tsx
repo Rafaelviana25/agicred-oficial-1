@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Download, Upload, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface BackupModalProps {
   onClose: () => void;
@@ -39,15 +42,39 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, userId }) => 
         contracts: contracts || []
       };
 
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `agicred_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const fileName = `agicred_backup_${new Date().toISOString().split('T')[0]}.json`;
+      const jsonString = JSON.stringify(backupData, null, 2);
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const result = await Filesystem.writeFile({
+            path: fileName,
+            data: jsonString,
+            directory: Directory.Documents,
+            encoding: Encoding.UTF8,
+          });
+          
+          await Share.share({
+            title: 'Backup Agicred',
+            text: 'Aqui está o seu arquivo de backup.',
+            url: result.uri,
+            dialogTitle: 'Compartilhar ou Salvar Backup'
+          });
+        } catch (fsError) {
+          console.error('Erro ao salvar arquivo no dispositivo:', fsError);
+          throw new Error('Erro ao salvar arquivo no dispositivo.');
+        }
+      } else {
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
 
       setStatus('success');
       setMessage('BACKUP REALIZADO COM SUCESSO!');
