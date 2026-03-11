@@ -8,10 +8,17 @@ import admin from 'firebase-admin';
 
 dotenv.config();
 
-// Initialize Firebase Admin
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+// Helper function to initialize Firebase Admin lazily
+function initializeFirebaseAdmin() {
+  if (admin.apps.length > 0) return;
+
+  const saJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!saJson) {
+    throw new Error('Variável FIREBASE_SERVICE_ACCOUNT não encontrada no ambiente.');
+  }
+
   try {
-    let envVar = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+    let envVar = saJson.trim();
     
     // Remove aspas simples ou duplas extras no início e no fim, se houver
     if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
@@ -22,40 +29,59 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     if (envVar.includes('\\"')) {
       try {
         const unescaped = JSON.parse(`"${envVar}"`);
-        if (unescaped.startsWith('{')) envVar = unescaped;
+        if (typeof unescaped === 'string' && unescaped.trim().startsWith('{')) {
+          envVar = unescaped;
+        }
       } catch (e) {}
     }
 
     const serviceAccount = JSON.parse(envVar);
     
-    // Corrigir quebras de linha na chave privada se necessário
-    if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    if (!serviceAccount || typeof serviceAccount !== 'object') {
+      throw new Error('O conteúdo da FIREBASE_SERVICE_ACCOUNT não é um objeto JSON válido.');
     }
 
-    // Validação básica dos campos obrigatórios
-    if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
-      throw new Error('O JSON da FIREBASE_SERVICE_ACCOUNT está incompleto. Faltam campos obrigatórios (project_id, private_key ou client_email).');
+    // Mapeia campos para garantir compatibilidade (snake_case para camelCase)
+    const projectId = serviceAccount.project_id || serviceAccount.projectId;
+    const clientEmail = serviceAccount.client_email || serviceAccount.clientEmail;
+    let privateKey = serviceAccount.private_key || serviceAccount.privateKey;
+
+    if (!projectId || !clientEmail || !privateKey) {
+      const keys = Object.keys(serviceAccount).join(', ');
+      throw new Error(`Campos obrigatórios ausentes. Encontrados apenas: ${keys}. Certifique-se de que o JSON contém project_id, client_email e private_key.`);
+    }
+
+    // Corrigir quebras de linha na chave privada
+    if (typeof privateKey === 'string') {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+      // Garante que a chave comece e termine com os delimitadores corretos se o usuário esqueceu
+      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+        privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
+      }
+      if (!privateKey.includes('-----END PRIVATE KEY-----')) {
+        privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
+      }
     }
 
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey
+      })
     });
     console.log('Firebase Admin initialized successfully');
-  } catch (e) {
-    console.error('Failed to initialize Firebase Admin. Check if the JSON is valid:', e);
+  } catch (e: any) {
+    console.error('Failed to initialize Firebase Admin:', e);
+    throw new Error(`Falha na inicialização do Firebase: ${e.message}`);
   }
-} else {
-  console.warn('FIREBASE_SERVICE_ACCOUNT not found in environment variables');
 }
 
 // Helper function to send Firebase push notifications
 async function sendFirebasePush(title: string, body: string, token: string) {
-  if (!admin.apps.length) {
-    throw new Error('Firebase Admin não está configurado corretamente no servidor (Verifique a variável FIREBASE_SERVICE_ACCOUNT no Render).');
-  }
-
   try {
+    initializeFirebaseAdmin();
+
     const message = {
       notification: {
         title: title,
@@ -67,7 +93,7 @@ async function sendFirebasePush(title: string, body: string, token: string) {
     const response = await admin.messaging().send(message);
     console.log('Successfully sent message:', response);
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending Firebase message:', error);
     throw error;
   }
