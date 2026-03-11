@@ -311,7 +311,7 @@ async function startServer() {
     }
     
     try {
-      const { userId, email, amount } = req.body;
+      const { userId, email, name, taxId, amount } = req.body;
 
       if (!userId || !email) {
         return res.status(400).json({ error: 'Missing userId or email' });
@@ -334,12 +334,22 @@ async function startServer() {
         description = 'Upgrade Agicred PRO - Trimestral';
       }
 
+      const firstName = name ? name.split(' ')[0] : 'Cliente';
+      const lastName = name && name.split(' ').length > 1 ? name.split(' ').slice(1).join(' ') : 'Agicred';
+      const cleanTaxId = taxId ? taxId.replace(/\D/g, '') : '00000000000';
+
       const body = {
         transaction_amount: Number(amount),
         description: description,
         payment_method_id: 'pix',
         payer: {
           email: email,
+          first_name: firstName,
+          last_name: lastName,
+          identification: {
+            type: cleanTaxId.length === 14 ? 'CNPJ' : 'CPF',
+            number: cleanTaxId
+          }
         },
         notification_url: notificationUrl,
         metadata: {
@@ -349,6 +359,15 @@ async function startServer() {
       };
 
       const response = await payment.create({ body });
+      console.log("Mercado Pago Response:", JSON.stringify(response, null, 2));
+
+      if (response.status === 'rejected') {
+        return res.status(400).json({ error: 'Pagamento rejeitado pelo Mercado Pago. Verifique se o CPF e os dados estão corretos.' });
+      }
+
+      if (!response.point_of_interaction?.transaction_data?.qr_code_base64) {
+        return res.status(400).json({ error: 'Mercado Pago não retornou o QR Code. Verifique os dados e tente novamente.' });
+      }
 
       res.json({
         id: response.id,
@@ -359,7 +378,8 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error('Error creating payment:', error);
-      res.status(500).json({ error: error.message });
+      const errorMessage = error.message || (error.response ? JSON.stringify(error.response) : JSON.stringify(error));
+      res.status(500).json({ error: errorMessage });
     }
   });
 

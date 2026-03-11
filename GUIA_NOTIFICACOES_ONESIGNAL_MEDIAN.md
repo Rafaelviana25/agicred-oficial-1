@@ -1,96 +1,16 @@
-# Guia Definitivo: Notificações Push com OneSignal e Median.co
-
-Este guia foi feito para você, que não é programador, conseguir configurar as notificações push no seu aplicativo usando o **OneSignal** (que envia as mensagens) e o **Median.co** (que transforma seu site em um aplicativo de celular).
-
----
-
-## PASSO 1: Criar e Configurar o OneSignal
-
-O OneSignal é o "carteiro". É ele quem vai entregar as notificações no celular dos seus clientes.
-
-1. **Crie uma conta:**
-   * Acesse [https://onesignal.com/](https://onesignal.com/) e crie uma conta gratuita.
-   * Faça o login.
-
-2. **Crie um novo App (Aplicativo):**
-   * No painel do OneSignal, clique no botão azul **"New App/Website"**.
-   * Dê um nome para o seu app (ex: "Agicred App").
-   * Escolha a opção **"Web"** (mesmo que vá usar no celular depois, o Median usa a base web para conectar).
-   * Clique em **"Next: Configure Your Platform"**.
-
-3. **Configuração Web:**
-   * Escolha a opção **"Typical Site"**.
-   * Em **"Site Setup"**:
-     * **Site Name:** Agicred
-     * **Site URL:** Cole a sua URL nova: `https://agicred-rv.netlify.app`
-   * Em **"Permission Prompt Setup"**:
-     * Clique em "Add a prompt" e escolha "Push Prompt" (isso faz a janelinha de permissão aparecer).
-   * Desça até o final e clique em **"Save"**.
-   * Na próxima tela, apenas clique em **"Finish"**.
-
-4. **Pegue o seu APP ID (O mais importante!):**
-   * No menu superior do OneSignal, clique em **"Settings"** (Configurações).
-   * Clique em **"Keys & IDs"**.
-   * Você verá um código longo chamado **"OneSignal App ID"** (ex: `1679fb28-2057-4bd7-9058-d8a8f5239cb1`).
-   * **Copie esse código.** Você vai precisar dele no Passo 2 e no Passo 3.
-   * *Atenção: Copie também a "Rest API Key" e guarde em um bloco de notas, pois o servidor precisará dela para enviar mensagens automáticas.*
-
----
-
-## PASSO 2: Configurar as Variáveis no seu Sistema
-
-Agora precisamos avisar o seu sistema (código) qual é o seu OneSignal.
-
-1. Vá até as configurações de **Variáveis de Ambiente** (Environment Variables) onde seu sistema está hospedado (ou no arquivo `.env` se for local).
-2. Adicione a seguinte variável:
-   * **Nome:** `VITE_ONESIGNAL_APP_ID`
-   * **Valor:** Cole o "OneSignal App ID" que você copiou no Passo 1.
-3. Adicione também a chave da API para o servidor conseguir enviar as mensagens:
-   * **Nome:** `ONESIGNAL_REST_API_KEY`
-   * **Valor:** Cole a "Rest API Key" que você copiou no Passo 1.
-   
-*(Nota: O sistema já está programado para ler essas variáveis automaticamente).*
-
----
-
-## PASSO 3: Configurar o Median.co (Transformar em App)
-
-O Median.co vai pegar o seu site e envelopar ele num aplicativo de verdade (APK para Android ou IPA para iPhone), e ele já tem integração nativa com o OneSignal.
-
-1. **Crie o App no Median:**
-   * Acesse [https://median.co/](https://median.co/) e faça login.
-   * Clique em **"Create App"**.
-   * No campo **"Website URL"**, cole a sua URL: `https://agicred-rv.netlify.app`
-   * Dê um nome para o App e clique em "Build".
-
-2. **Ativar o OneSignal dentro do Median:**
-   * No menu lateral esquerdo do Median, procure pela seção **"Push Notifications"** (Notificações Push).
-   * Clique em **"OneSignal"**.
-   * Marque a caixa para ativar (Enable OneSignal).
-   * Vai aparecer um campo pedindo o **"OneSignal App ID"**. Cole aquele mesmo código que você copiou no Passo 1.
-   * Salve as configurações.
-
-3. **Gerar o Aplicativo:**
-   * Vá na aba **"Build"** no menu superior do Median.
-   * Clique para gerar o seu aplicativo (Android APK, por exemplo).
-   * Baixe o aplicativo e instale no seu celular para testar.
-
----
-
-## PASSO 4: Como o sistema vai funcionar na prática?
-
-1. **Quando o usuário abrir o App no celular:**
-   * O código que já está no seu sistema vai perceber que está rodando dentro do Median.co.
-   * Ele vai pedir permissão para enviar notificações (aquela janelinha padrão do celular).
-   * Se o usuário aceitar, o sistema vai pegar o "Código do Celular" (Player ID) e salvar no banco de dados (Supabase) na tabela `profiles`, na coluna `push_token`.
-
-2. **Como enviar notificações:**
-   * **Manualmente:** Você pode entrar no painel do OneSignal, clicar em "New Message" -> "Push" e enviar uma mensagem para todos que instalaram o app.
-   * **Automaticamente (Vencimentos):** O seu servidor já tem uma rota (`/api/trigger-overdue-check`) que roda todos os dias. Quando ela rodar, ela vai olhar quem está com contrato vencido, pegar o `push_token` dessa pessoa no banco de dados, e usar o OneSignal para mandar a mensagem direto para o celular dela.
-
-## Dica de Ouro para Testes
-Se você quiser testar se está funcionando antes de esperar um contrato vencer:
-1. Instale o app gerado pelo Median no seu celular.
-2. Faça login na sua conta do Agicred.
-3. Aceite receber notificações.
-4. Vá no painel do Supabase, na tabela `profiles`, e veja se a coluna `push_token` foi preenchida com um código longo. Se sim, a integração foi um sucesso absoluto!
+VITE_SUPABASE_URL=https://molhsshtzrvkywoqhxho.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjU2MzgsImV4cCI6MjA4MzgwMTYzOH0.UcyQP7pUKtEO-3G43TEscPtrpcVsRpZJvRBmbSVUH6s
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyNTYzOCwiZXhwIjoyMDgzODAxNjM4fQ.3u57BBPtEuDKTJNDN1giPLgnJ4_KU9h-UqGgVFAB0L4
+MERCADO_PAGO_ACCESS_TOKEN=APP_USR-2064886398402150-022716-fe6f4981f312fbf4fd170ca11d630f4a-14757248
+APP_URL=https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app
+VITE_API_URL=https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app
+VITE_ONESIGNAL_APP_ID=75808b28-ebd4-4db0-a3db-55a3360eab13
+ONESIGNAL_REST_API_KEY=os_v2_app_owaiwkhl2rg3bi63kwrtmdvlcpwextp6bm4uhru5nzj5nouqmonl2zz46by56ymws6myeufifnoxdd647lsfsjk6o2lur7gpbnoo5di
+VITE_FIREBASE_AUTH_DOMAIN=agicred-push.firebaseapp.com
+VITE_FIREBASE_STORAGE_BUCKET=agicred-push.firebasestorage.app
+VITE_FIREBASE_PROJECT_ID=agicred-push
+VITE_FIREBASE_API_KEY=AIzaSyColFxGzISwZt3spyIm07tpSUqNaK3J9-s
+VITE_FIREBASE_MESSAGING_SENDER_ID=254591707488
+VITE_FIREBASE_VAPID_KEY=BAgeumDuvOeRjK8YCBBaTFTvr321vUkldNVxIGHqyKfBdQZJj30XSZHzYs_uSpVqEXY0-6Qdlh-RC73ahiKO9Is
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"agicred-push","private_key_id":"bead4da18033f411f525ca36e0416e47ed257523","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDP1+e+8PRzA3vV\nNq41rpiNk2Fyv6GSVArpVnVN6KFJnQSXZpz95u235S5k7IdkLmwa/PYV83g8QYVG\nKHYJa+F/3PjcdvOgi3UPLXU0rFRIwIlZ+lvu0UPZDfEWjrtOaAr+DZm/63uVnmCY\nd+03fr8uQevmNwgvV/hQPWPvxAcBENm8eetmlA1RvtEwNGmo384orwUTryBe4LUG\nKIAgjnJcNwNHeNne70TkhcWD4xdwxDVDT8hTXKDztQbsHL4RNY5zUwbWeZkGn1PM\na0nkzRd0JlD6M8vKg/wT+HvrFDFNuqIDvrulvSVqCLsV621MkAEq/ObPGL7cCChd\n6hynhKShAgMBAAECggEAT6PTUP7TLB7xnElPh5JXMih+9pEnQAKkC7TtTeUNqD9a\nOwk+rquF+yj+Ff3sAx8mnVDAmrioIa6ZesCWOhX0WiI52YBa6fGF8ULh3kUKJrZf\n6vJbt67H6KvG7XXTn7+ONrrPZxK8UCBXsxSA+PrAFuF7msMLh9iVdWmQmZbreCRj\npZoqj3kMvaIGFd6U/ds3VfyLxnBM+7ptwFE4SSrmE9d6PUDE3mdFo3Bl7Qdm9vv0\nlBFObwLPe+7WzDFokayaOcare80BC3oODDfDOKrBD/3TEzoO6wOrtKUS0u3Vqz5R\nDJs2C0Z9B6M+aHZ4eKZu+n/bdJcVIV4LhNEbAfK0YQKBgQD2DKxP/2J4LneFfRbm\nVD3u2GlPJeRxFCpCClv4jwzmsUnRQN2f0uMQb8KJ8KVoACdCwtsvxu/ueLVJnlD1\nI4uQnbR/DOs/3OX4+oOh235qptwBp6tNRb4tpBrub1/TFO4isOYQdaE+dUiXPfZx\nl8sjvvFYnfCncUCwBWgfnSCXVwKBgQDYP7AVJcAD++Zz010D0MGgLZJvhEzPoMJC\nbjsHqpenknwuJP7daNCMGYXjxF00zFUPsrb0s7ij0D2ckc9841Xec9N8wJR/Pn0m\n4yKgSMcIMlkKPCKHcBzrd5rtjfdRfQT4kMjR8RpEmZHWP1GJyIQyJdalt0nBiRXL\nVtRcQ+kAxwKBgQC/Kh1+kecJhOCrwAJYtb7goRdAvSn9iTND2BSYy1u0qK23fHQ0\nRn7QOGSnE2cPpH7cadQuDJxBZVtEdVJlA1bd5wljZMAqABBVHx3CVWykpDtutbxr\n7vHROB0Mf0+uCibyoQo+Y4YBptHdX/DnVI4pmaKdvShKj704hRre5Q97RQKBgQCi\nDjBN2Mlp8ueD21y0VEgWWrCHo7TQUB/kGqlgGGaoLK2lAxKAKGFI7IOa6fgTbiE8\nr2hOPzTahl71q4u7gr5CA7j0n3lpVhICB2tWhNOq/9gcRG534vu5NhvDdIVn6vHD\nuPTV6AIQcKmKzk6zm7H9xr9x1saOI8ZSaNKiBj5h1wKBgE8fSgaq/630nBdYkW9t\nOIFQEkYVqh8VY5xx7hykZuWkIGUmklU8vdMoyMXjZlkPjBbYuu8++9wDfrZR2fe1\natc/oQflRgEm6LJg3UfnOktzfkuHeyyvYTsh5jRq1HP98A0UBduYMwjjTkvaWAu2\nSKLwZyeDKtlD7kPHbWtgiuZw\n-----END PRIVATE KEY-----\n","client_email":"firebase-adminsdk-fbsvc@agicred-push.iam.gserviceaccount.com","client_id":"100741847250453827276","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40agicred-push.iam.gserviceaccount.com","universe_domain":"googleapis.com"}
+VITE_FIREBASE_APP_ID=1:254591707488:web:f5b2859674db4411885605
