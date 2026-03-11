@@ -69,7 +69,13 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/create-payment`, {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      if (!apiUrl) {
+        alert("Erro: URL da API não configurada. O aplicativo não consegue se comunicar com o servidor.");
+        setLoading(false);
+        return;
+      }
+      const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -77,6 +83,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
         body: JSON.stringify({
           userId: user.id,
           email: form.email,
+          name: form.name,
+          taxId: form.taxId,
           amount: selectedPlan.amount
         })
       });
@@ -103,7 +111,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   const checkStatus = async () => {
     if (!paymentData) return false;
     try {
-      const response = await fetch(`/api/payment-status/${paymentData.id}`);
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/payment-status/${paymentData.id}`);
       const data = await response.json();
       
       if (data.is_approved) {
@@ -114,6 +123,12 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
           onClose();
         }, 3500);
         return true;
+      } else if (data.status === 'rejected' || data.status === 'cancelled') {
+        localStorage.removeItem('pending_payment');
+        setPaymentData(null);
+        setStep('form');
+        alert('O pagamento foi rejeitado ou cancelado. Por favor, verifique seus dados (como o CPF) e tente gerar um novo PIX.');
+        return false;
       }
       return false;
     } catch (err) {

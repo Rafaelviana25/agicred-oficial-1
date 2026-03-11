@@ -384,7 +384,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative overflow-hidden h-full bg-slate-50">
+      <main className="flex-1 flex flex-col relative overflow-hidden h-full bg-slate-50 pt-safe">
         <header className="px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between shrink-0 glass-panel border-b border-slate-200 z-40 relative">
           <div className="flex items-center gap-4">
             <AgicredLogo className="lg:hidden" textClassName="text-xl text-slate-900" />
@@ -2410,7 +2410,9 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 type="button" 
                 onClick={async () => {
                   try {
-                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
+                    const API_URL = Capacitor.isNativePlatform() 
+                      ? ((import.meta as any).env?.VITE_API_URL || 'https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app')
+                      : '';
                     console.log(`Triggering test push at: ${API_URL}/api/test-push`);
                     
                     const res = await fetch(`${API_URL}/api/test-push`, {
@@ -2462,7 +2464,9 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               onClick={async () => {
                 setValidating(true);
                 try {
-                  const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
+                  const API_URL = Capacitor.isNativePlatform() 
+                    ? ((import.meta as any).env?.VITE_API_URL || 'https://ais-pre-2bjlezsixjzcuifsodkmaf-16976772385.us-west1.run.app')
+                    : '';
                   const res = await fetch(`${API_URL}/api/debug/test-upgrade`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
