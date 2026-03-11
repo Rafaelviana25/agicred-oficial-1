@@ -205,7 +205,7 @@ Pelo menos um número (0 a 9)`;
   if (mode === 'forgot') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
-        <div className="max-w-xs w-full glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
+        <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
             <AgicredLogo className="mx-auto" />
             <p className="text-[9px] text-violet-600 tracking-[0.3em] mt-2">RECUPERAÇÃO DE ACESSO</p>
@@ -337,7 +337,7 @@ Pelo menos um número (0 a 9)`;
   if (mode === 'change') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
-        <div className="max-w-xs w-full glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
+        <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
             <AgicredLogo className="mx-auto" />
             <p className="text-[9px] text-violet-600 tracking-[0.3em] mt-2">ALTERAR SENHA</p>
@@ -432,7 +432,7 @@ Pelo menos um número (0 a 9)`;
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       
-      <div className="max-w-xs lg:max-w-md w-full glass-panel rounded-[2.5rem] p-8 lg:p-12 space-y-8 lg:space-y-10 animate-in fade-in zoom-in duration-700 relative z-10 shadow-2xl">
+      <div className="w-[92%] max-w-sm lg:max-w-md glass-panel rounded-[2.5rem] p-8 lg:p-12 space-y-8 lg:space-y-10 animate-in fade-in zoom-in duration-700 relative z-10 shadow-2xl">
         <div className="text-center space-y-2">
           <AgicredLogo className="mx-auto scale-110 lg:scale-125" />
           <div className="h-1 w-12 bg-violet-500 mx-auto rounded-full mt-4 opacity-60"></div>
@@ -451,7 +451,7 @@ Pelo menos um número (0 a 9)`;
               <User className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="email" required
-                className="w-full pl-14 pr-6 py-4.5 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 lowercase shadow-inner"
+                className="w-full pl-14 pr-6 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 lowercase shadow-inner"
                 placeholder="e-mail"
                 value={email} onChange={e => setEmail(e.target.value.toLowerCase())}
               />
@@ -463,7 +463,7 @@ Pelo menos um número (0 a 9)`;
               <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type={showPassword ? "text" : "password"} required
-                className="w-full pl-14 pr-14 py-4.5 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 shadow-inner"
+                className="w-full pl-14 pr-14 py-4 lg:py-5 glass-input rounded-2xl lg:rounded-3xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs lg:text-sm outline-none placeholder:text-slate-400 shadow-inner"
                 placeholder="••••••••"
                 value={password} onChange={e => setPassword(e.target.value)}
               />

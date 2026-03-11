@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { messaging, getToken, onMessage } from './firebase';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 
 let isSettingUp = false;
 
@@ -8,92 +10,118 @@ export const setupPushNotifications = async (userId: string): Promise<void> => {
   isSettingUp = true;
 
   try {
-    console.log("Iniciando configuração de notificações Firebase...");
+    console.log("Iniciando configuração de notificações...");
 
-    // Verifica se o navegador suporta notificações
-    if (!("Notification" in window)) {
-      console.log("Este navegador não suporta notificações desktop");
-      isSettingUp = false;
-      return;
-    }
-
-    // Solicita permissão
-    const permission = await Notification.requestPermission();
-    
-    if (permission === "granted") {
-      console.log("Permissão de notificação concedida.");
+    if (Capacitor.isNativePlatform()) {
+      // Configuração NATIVA (Android/iOS via Capacitor)
+      console.log("Plataforma nativa detectada. Configurando Capacitor Push Notifications...");
       
-      // Registra o Service Worker explicitamente para evitar erros de timeout
-      let registration;
-      if ('serviceWorker' in navigator) {
-        try {
-          // Verifica se já existe um registro
-          const existingReg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-          if (existingReg) {
-            registration = existingReg;
-            console.log("Service Worker já registrado.");
-          } else {
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-              scope: '/'
-            });
-            console.log("Service Worker registrado com sucesso:", registration);
-          }
-          
-          // Aguarda o service worker estar pronto
-          await navigator.serviceWorker.ready;
-          console.log("Service Worker está pronto.");
-          
-          // Pequeno delay adicional para garantir a inicialização
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (swError) {
-          console.error("Erro ao registrar Service Worker:", swError);
-        }
-      } else {
-        console.warn("Service Workers não são suportados neste navegador.");
+      let permStatus = await PushNotifications.checkPermissions();
+
+      if (permStatus.receive === 'prompt') {
+        permStatus = await PushNotifications.requestPermissions();
       }
-      
-      // Obtém o token FCM
-      // O VAPID KEY é necessário para web push
-      const vapidKey = (import.meta as any).env.VITE_FIREBASE_VAPID_KEY;
-      
-      const token = await getToken(messaging, {
-        vapidKey: vapidKey,
-        serviceWorkerRegistration: registration
-      });
 
-      if (token) {
-        console.log("Token FCM obtido:", token);
+      if (permStatus.receive !== 'granted') {
+        console.warn("Permissão de notificação nativa negada.");
+        isSettingUp = false;
+        return;
+      }
+
+      // Registra no FCM nativo
+      await PushNotifications.register();
+
+      // Listener de registro bem-sucedido (recebe o token nativo)
+      PushNotifications.addListener('registration', async (token) => {
+        console.log("Token FCM Nativo obtido:", token.value);
         
         // Salva o token no perfil do usuário no Supabase
         const { error } = await supabase
           .from('profiles')
-          .update({ push_token: token })
+          .update({ push_token: token.value })
           .eq('id', userId);
 
         if (error) {
-          console.error('Erro ao salvar token no Supabase:', error);
-          throw error;
+          console.error('Erro ao salvar token nativo no Supabase:', error);
+        } else {
+          console.log('Token nativo salvo com sucesso!');
         }
+      });
 
-        console.log('Token Firebase salvo com sucesso!');
+      // Listener de erro no registro
+      PushNotifications.addListener('registrationError', (error: any) => {
+        console.error('Erro no registro de push nativo:', error);
+      });
+
+      // Listener de mensagem recebida em primeiro plano
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        console.log('Notificação nativa recebida em primeiro plano:', notification);
+        alert(`${notification.title}: ${notification.body}`);
+      });
+
+    } else {
+      // Configuração WEB (Navegador)
+      console.log("Plataforma web detectada. Configurando Firebase Web Push...");
+      
+      if (!("Notification" in window)) {
+        console.log("Este navegador não suporta notificações desktop");
+        isSettingUp = false;
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      
+      if (permission === "granted") {
+        console.log("Permissão de notificação web concedida.");
         
-        // Listener para mensagens em primeiro plano
-        onMessage(messaging, (payload) => {
-          console.log('Mensagem recebida em primeiro plano:', payload);
-          // Aqui você pode mostrar um toast ou notificação customizada
-          if (payload.notification) {
-            alert(`${payload.notification.title}: ${payload.notification.body}`);
+        let registration;
+        if ('serviceWorker' in navigator) {
+          try {
+            const existingReg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+            if (existingReg) {
+              registration = existingReg;
+            } else {
+              registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                scope: '/'
+              });
+            }
+            await navigator.serviceWorker.ready;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } catch (swError) {
+            console.error("Erro ao registrar Service Worker:", swError);
           }
+        }
+        
+        const vapidKey = (import.meta as any).env.VITE_FIREBASE_VAPID_KEY;
+        
+        const token = await getToken(messaging, {
+          vapidKey: vapidKey,
+          serviceWorkerRegistration: registration
         });
 
+        if (token) {
+          console.log("Token FCM Web obtido:", token);
+          
+          const { error } = await supabase
+            .from('profiles')
+            .update({ push_token: token })
+            .eq('id', userId);
+
+          if (error) throw error;
+          
+          onMessage(messaging, (payload) => {
+            console.log('Mensagem web recebida em primeiro plano:', payload);
+            if (payload.notification) {
+              alert(`${payload.notification.title}: ${payload.notification.body}`);
+            }
+          });
+        }
       } else {
-        console.warn("Nenhum token de registro disponível. Solicite permissão para gerar um.");
+        console.warn("Permissão de notificação web negada.");
       }
-    } else {
-      console.warn("Permissão de notificação negada.");
     }
   } catch (error) {
-    console.error("Erro ao configurar notificações Firebase:", error);
+    console.error("Erro ao configurar notificações:", error);
     throw error;
   } finally {
     isSettingUp = false;

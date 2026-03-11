@@ -11,13 +11,28 @@ dotenv.config();
 // Initialize Firebase Admin
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    let envVar = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+    // Remove aspas simples ou duplas extras no início e no fim, se houver
+    if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
+      if (!envVar.startsWith('"{') && !envVar.endsWith('}"')) {
+         envVar = envVar.slice(1, -1);
+      }
+    }
+    
+    // Tenta consertar escapes se a string vier muito escapada
+    if (envVar.includes('\\"')) {
+      try {
+        envVar = JSON.parse(`"${envVar}"`); // Unescape
+      } catch (e) {}
+    }
+
+    const serviceAccount = JSON.parse(envVar);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
     console.log('Firebase Admin initialized successfully');
   } catch (e) {
-    console.error('Failed to initialize Firebase Admin:', e);
+    console.error('Failed to initialize Firebase Admin. Check if the JSON is valid:', e);
   }
 } else {
   console.warn('FIREBASE_SERVICE_ACCOUNT not found in environment variables');
@@ -25,6 +40,10 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 
 // Helper function to send Firebase push notifications
 async function sendFirebasePush(title: string, body: string, token: string) {
+  if (!admin.apps.length) {
+    throw new Error('Firebase Admin não está configurado corretamente no servidor (Verifique a variável FIREBASE_SERVICE_ACCOUNT no Render).');
+  }
+
   try {
     const message = {
       notification: {
