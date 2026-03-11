@@ -86,39 +86,41 @@ function initializeFirebaseAdmin() {
     }
 
     // 3. Normalização dos campos (Firebase aceita snake_case ou camelCase, mas vamos garantir)
-    const projectId = serviceAccount.project_id || serviceAccount.projectId;
-    const clientEmail = serviceAccount.client_email || serviceAccount.clientEmail;
+    const projectId = (serviceAccount.project_id || serviceAccount.projectId || '').toString().trim();
+    const clientEmail = (serviceAccount.client_email || serviceAccount.clientEmail || '').toString().trim();
     let privateKey = serviceAccount.private_key || serviceAccount.privateKey;
 
     if (!projectId || !clientEmail || !privateKey) {
       throw new Error(`Campos obrigatórios ausentes no JSON. Certifique-se de que o arquivo contém project_id, client_email e private_key.`);
     }
 
-    // 4. Correção crucial da Private Key
+    // 4. Correção crucial da Private Key (Normalização agressiva e formatação PEM)
     if (typeof privateKey === 'string') {
-      // Remove espaços extras que podem ter vindo de um "flatten" acidental
-      privateKey = privateKey.trim();
+      const header = '-----BEGIN PRIVATE KEY-----';
+      const footer = '-----END PRIVATE KEY-----';
       
-      // Substitui \n literal por quebras de linha reais
-      privateKey = privateKey.replace(/\\n/g, '\n');
+      // Remove qualquer lixo ao redor
+      let cleanedKey = privateKey.trim();
       
-      // Se a chave não tiver quebras de linha mas for longa, pode ser que o Render tenha removido
-      // No entanto, o Firebase Admin costuma aceitar a chave se os delimitadores estiverem corretos
-      
-      // Garante os delimitadores PEM corretos
-      if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
-      }
-      if (!privateKey.includes('-----END PRIVATE KEY-----')) {
-        privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
+      // Extrai apenas o conteúdo entre os delimitadores se eles existirem
+      if (cleanedKey.includes(header) && cleanedKey.includes(footer)) {
+        const parts = cleanedKey.split(header);
+        const subParts = parts[1].split(footer);
+        cleanedKey = subParts[0];
       }
       
-      // Garante que os delimitadores tenham quebras de linha depois/antes
-      privateKey = privateKey.replace('-----BEGIN PRIVATE KEY-----', '-----BEGIN PRIVATE KEY-----\n');
-      privateKey = privateKey.replace('-----END PRIVATE KEY-----', '\n-----END PRIVATE KEY-----');
+      // Limpa o conteúdo interno: remove \n reais, \n literais, espaços, tabs, etc.
+      cleanedKey = cleanedKey
+        .replace(/\\n/g, '') // Remove \n literais
+        .replace(/\n/g, '')   // Remove quebras de linha reais
+        .replace(/\s/g, '');  // Remove qualquer espaço, tab, etc.
       
-      // Remove múltiplas quebras de linha seguidas
-      privateKey = privateKey.replace(/\n+/g, '\n');
+      // Reconstroi no formato PEM padrão (RFC 7468) com quebras de linha a cada 64 caracteres
+      // Isso é o que o OpenSSL/Node.js espera e resolve a maioria dos problemas de "Invalid JWT Signature"
+      const matches = cleanedKey.match(/.{1,64}/g);
+      const formattedKey = matches ? matches.join('\n') : cleanedKey;
+      
+      privateKey = `${header}\n${formattedKey}\n${footer}`;
     }
 
     // 5. Inicialização com objeto limpo
@@ -128,6 +130,7 @@ function initializeFirebaseAdmin() {
       privateKey
     };
 
+    console.log('Firebase Admin initialization attempt at:', new Date().toISOString());
     console.log('Iniciando Firebase Admin com Project ID:', projectId);
     console.log('Campos do JSON detectados:', Object.keys(serviceAccount).join(', '));
 
