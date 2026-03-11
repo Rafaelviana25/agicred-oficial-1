@@ -1,30 +1,89 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function main() {
-  console.log('Trying to add column via RPC exec_sql...');
-  
-  const sql = `ALTER TABLE contracts ADD COLUMN IF NOT EXISTS payment_history JSONB;`;
-  
-  const { data, error } = await supabase.rpc('exec_sql', { sql });
-  
-  if (error) {
-    console.log('RPC exec_sql failed:', error.message);
-    // Try another common name for sql execution function
-    const { error: error2 } = await supabase.rpc('run_sql', { sql });
-    if (error2) {
-        console.log('RPC run_sql failed:', error2.message);
-    } else {
-        console.log('RPC run_sql success!');
-    }
-  } else {
-    console.log('RPC exec_sql success!');
-  }
-}
-
-main();
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/icon-512x512.png">
+    <title>AGICRED | Gestão de Empréstimos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fintech-bg: #F8FAFC;
+            --fintech-card: #FFFFFF;
+            --fintech-primary: #7C3AED;
+            --fintech-secondary: #3B82F6;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--fintech-bg);
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.05), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+            background-attachment: fixed;
+        }
+        html {
+            height: -webkit-fill-available;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            color: #0F172A;
+        }
+        .glass-input:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+            background: #FFFFFF;
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .pb-safe {
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+        .pt-safe {
+            padding-top: env(safe-area-inset-top);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Hide spin buttons for number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

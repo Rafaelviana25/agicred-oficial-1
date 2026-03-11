@@ -1,16 +1,138 @@
-VITE_SUPABASE_URL=https://molhsshtzrvkywoqhxho.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjU2MzgsImV4cCI6MjA4MzgwMTYzOH0.UcyQP7pUKtEO-3G43TEscPtrpcVsRpZJvRBmbSVUH6s
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyNTYzOCwiZXhwIjoyMDgzODAxNjM4fQ.3u57BBPtEuDKTJNDN1giPLgnJ4_KU9h-UqGgVFAB0L4
-MERCADO_PAGO_ACCESS_TOKEN=APP_USR-2064886398402150-022716-fe6f4981f312fbf4fd170ca11d630f4a-14757248
-APP_URL=https://agicred-9wto.onrender.com
-VITE_API_URL=https://agicred-9wto.onrender.com
-VITE_ONESIGNAL_APP_ID=75808b28-ebd4-4db0-a3db-55a3360eab13
-ONESIGNAL_REST_API_KEY=os_v2_app_owaiwkhl2rg3bi63kwrtmdvlcpwextp6bm4uhru5nzj5nouqmonl2zz46by56ymws6myeufifnoxdd647lsfsjk6o2lur7gpbnoo5di
-VITE_FIREBASE_AUTH_DOMAIN=agicred-push.firebaseapp.com
-VITE_FIREBASE_STORAGE_BUCKET=agicred-push.firebasestorage.app
-VITE_FIREBASE_PROJECT_ID=agicred-push
-VITE_FIREBASE_API_KEY=AIzaSyColFxGzISwZt3spyIm07tpSUqNaK3J9-s
-VITE_FIREBASE_MESSAGING_SENDER_ID=254591707488
-VITE_FIREBASE_VAPID_KEY=BAgeumDuvOeRjK8YCBBaTFTvr321vUkldNVxIGHqyKfBdQZJj30XSZHzYs_uSpVqEXY0-6Qdlh-RC73ahiKO9Is
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"agicred-push","private_key_id":"bead4da18033f411f525ca36e0416e47ed257523","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDP1+e+8PRzA3vV\nNq41rpiNk2Fyv6GSVArpVnVN6KFJnQSXZpz95u235S5k7IdkLmwa/PYV83g8QYVG\nKHYJa+F/3PjcdvOgi3UPLXU0rFRIwIlZ+lvu0UPZDfEWjrtOaAr+DZm/63uVnmCY\nd+03fr8uQevmNwgvV/hQPWPvxAcBENm8eetmlA1RvtEwNGmo384orwUTryBe4LUG\nKIAgjnJcNwNHeNne70TkhcWD4xdwxDVDT8hTXKDztQbsHL4RNY5zUwbWeZkGn1PM\na0nkzRd0JlD6M8vKg/wT+HvrFDFNuqIDvrulvSVqCLsV621MkAEq/ObPGL7cCChd\n6hynhKShAgMBAAECggEAT6PTUP7TLB7xnElPh5JXMih+9pEnQAKkC7TtTeUNqD9a\nOwk+rquF+yj+Ff3sAx8mnVDAmrioIa6ZesCWOhX0WiI52YBa6fGF8ULh3kUKJrZf\n6vJbt67H6KvG7XXTn7+ONrrPZxK8UCBXsxSA+PrAFuF7msMLh9iVdWmQmZbreCRj\npZoqj3kMvaIGFd6U/ds3VfyLxnBM+7ptwFE4SSrmE9d6PUDE3mdFo3Bl7Qdm9vv0\nlBFObwLPe+7WzDFokayaOcare80BC3oODDfDOKrBD/3TEzoO6wOrtKUS0u3Vqz5R\nDJs2C0Z9B6M+aHZ4eKZu+n/bdJcVIV4LhNEbAfK0YQKBgQD2DKxP/2J4LneFfRbm\nVD3u2GlPJeRxFCpCClv4jwzmsUnRQN2f0uMQb8KJ8KVoACdCwtsvxu/ueLVJnlD1\nI4uQnbR/DOs/3OX4+oOh235qptwBp6tNRb4tpBrub1/TFO4isOYQdaE+dUiXPfZx\nl8sjvvFYnfCncUCwBWgfnSCXVwKBgQDYP7AVJcAD++Zz010D0MGgLZJvhEzPoMJC\nbjsHqpenknwuJP7daNCMGYXjxF00zFUPsrb0s7ij0D2ckc9841Xec9N8wJR/Pn0m\n4yKgSMcIMlkKPCKHcBzrd5rtjfdRfQT4kMjR8RpEmZHWP1GJyIQyJdalt0nBiRXL\nVtRcQ+kAxwKBgQC/Kh1+kecJhOCrwAJYtb7goRdAvSn9iTND2BSYy1u0qK23fHQ0\nRn7QOGSnE2cPpH7cadQuDJxBZVtEdVJlA1bd5wljZMAqABBVHx3CVWykpDtutbxr\n7vHROB0Mf0+uCibyoQo+Y4YBptHdX/DnVI4pmaKdvShKj704hRre5Q97RQKBgQCi\nDjBN2Mlp8ueD21y0VEgWWrCHo7TQUB/kGqlgGGaoLK2lAxKAKGFI7IOa6fgTbiE8\nr2hOPzTahl71q4u7gr5CA7j0n3lpVhICB2tWhNOq/9gcRG534vu5NhvDdIVn6vHD\nuPTV6AIQcKmKzk6zm7H9xr9x1saOI8ZSaNKiBj5h1wKBgE8fSgaq/630nBdYkW9t\nOIFQEkYVqh8VY5xx7hykZuWkIGUmklU8vdMoyMXjZlkPjBbYuu8++9wDfrZR2fe1\natc/oQflRgEm6LJg3UfnOktzfkuHeyyvYTsh5jRq1HP98A0UBduYMwjjTkvaWAu2\nSKLwZyeDKtlD7kPHbWtgiuZw\n-----END PRIVATE KEY-----\n","client_email":"firebase-adminsdk-fbsvc@agicred-push.iam.gserviceaccount.com","client_id":"100741847250453827276","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40agicred-push.iam.gserviceaccount.com","universe_domain":"googleapis.com"}
-VITE_FIREBASE_APP_ID=1:254591707488:web:f5b2859674db4411885605
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from './services/supabase';
+import { setupPushNotifications } from './services/pushNotifications';
+import Login from './views/Login';
+import Register from './views/Register';
+import Dashboard from './views/Dashboard';
+import SchemaError from './views/SchemaError';
+import { UserProfile } from './types';
+
+const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'login' | 'register'>('login');
+  const [hasSchemaError, setHasSchemaError] = useState(false);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session error:", error);
+        supabase.auth.signOut().catch(console.error);
+      }
+      setSession(session);
+      if (session) fetchProfile(session.user.id, session);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Session catch error:", err);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveringPassword(true);
+      }
+      if (event === 'SIGNED_OUT') {
+        setIsRecoveringPassword(false);
+      }
+      setSession(session);
+      if (session && event !== 'PASSWORD_RECOVERY') fetchProfile(session.user.id, session);
+      else if (!session) {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string, currentSession: any) => {
+    // Usamos maybeSingle para não dar erro caso não encontre nada
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+      const fallbackProfile = {
+      id: userId,
+      email: currentSession?.user?.email || '',
+      full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
+      cpf: currentSession?.user?.user_metadata?.cpf || '',
+      phone: currentSession?.user?.user_metadata?.phone || '',
+      is_pro: false,
+      created_at: new Date().toISOString()
+    };
+
+    if (error) {
+      console.error('Error fetching profile:', error);
+      if (error.code === 'PGRST205') {
+        setHasSchemaError(true);
+      } else {
+        setProfile(fallbackProfile);
+      }
+      return;
+    }
+
+    if (data) {
+      setProfile(data);
+      setHasSchemaError(false);
+      setupPushNotifications(userId);
+    } else {
+      // Usuário logado mas sem registro na tabela profiles
+      // Tentar criar perfil básico automaticamente
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert(fallbackProfile)
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('Error auto-creating profile:', createError);
+        // Se falhar (ex: race condition com Register.tsx), aguarda um pouco e tenta buscar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: retryData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        if (retryData) {
+          setProfile(retryData);
+        } else {
+          // Fallback final para garantir que o app não quebre
+          setProfile(fallbackProfile);
+        }
+      } else {
+        setProfile(newProfile);
+      }
+    }
+  };
+
+  const handleProfileComplete = () => {
+    if (session) fetchProfile(session.user.id, session);
+  };
+
+  if (hasSchemaError) {
+    return <SchemaError />;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!session || isRecoveringPassword) {
+    return view === 'login' 
+      ? <Login onSwitch={() => setView('register')} onRecoveryMode={(mode) => setIsRecoveringPassword(mode)} /> 
+      : <Register onSwitch={() => setView('login')} />;
+  }
+
+  return <Dashboard userProfile={profile} onUpgradeSuccess={handleProfileComplete} />;
+};
+
+export default App;
