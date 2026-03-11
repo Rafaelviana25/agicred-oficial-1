@@ -74,6 +74,7 @@ function initializeFirebaseAdmin() {
     };
 
     console.log('Iniciando Firebase Admin com Project ID:', projectId);
+    console.log('Campos do JSON detectados:', Object.keys(serviceAccount).join(', '));
 
     admin.initializeApp({
       credential: admin.credential.cert(credentialObj)
@@ -551,6 +552,8 @@ const checkAndSendOverdueNotifications = async () => {
 
       if (overdueList.length > 0) {
         let sentCount = 0;
+        const errors: string[] = [];
+        
         for (const contract of overdueList) {
           // Update status to overdue if it was active
           if (contract.status === 'active') {
@@ -563,17 +566,21 @@ const checkAndSendOverdueNotifications = async () => {
           const clientName = await getClientName(supabase, contract.client_id);
 
           try {
+            console.log(`Enviando push para token: ${pushToken.substring(0, 10)}...`);
             await sendFirebasePush(
               'Contrato Vencido! ⚠️',
               `O contrato do cliente ${clientName} está vencido!`,
               pushToken
             );
             sentCount++;
-          } catch (pushError) {
-            console.error(`Failed to send push in test:`, pushError);
+          } catch (pushError: any) {
+            console.error(`Failed to send push in test for contract ${contract.id}:`, pushError);
+            errors.push(`${contract.id}: ${pushError.message}`);
           }
         }
-        res.json({ success: true, message: `Foram encontrados ${overdueList.length} contratos vencidos e ${sentCount} notificações foram enviadas.` });
+        
+        const message = `Foram encontrados ${overdueList.length} contratos vencidos e ${sentCount} notificações foram enviadas.${errors.length > 0 ? ' Erros: ' + errors.join(', ') : ''}`;
+        res.json({ success: true, message, sentCount, totalOverdue: overdueList.length });
       } else {
         // Send a simulated notification if no overdue contracts are found so they can still test it
         try {
