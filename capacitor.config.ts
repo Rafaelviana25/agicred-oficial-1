@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.agicred.app',
   appName: 'Agicred',
   webDir: 'dist',
-  bundledWebRuntime: false,
   plugins: {
     StatusBar: {
       style: 'DARK',

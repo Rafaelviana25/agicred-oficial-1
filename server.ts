@@ -4,186 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
-import admin from 'firebase-admin';
 
 dotenv.config();
-
-// Helper function to initialize Firebase Admin lazily
-function initializeFirebaseAdmin() {
-  if (admin.apps.length > 0) return;
-
-  // TENTATIVA 1: Usar variáveis individuais (MUITO mais estável no Render)
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
-
-  if (projectId && clientEmail && privateKeyRaw) {
-    console.log('Inicializando Firebase via variáveis individuais (Método estável)');
-    try {
-      let privateKey = privateKeyRaw.trim();
-      
-      // Normalização da Private Key
-      const header = '-----BEGIN PRIVATE KEY-----';
-      const footer = '-----END PRIVATE KEY-----';
-      
-      // Remove lixo e normaliza
-      let cleanedKey = privateKey;
-      if (cleanedKey.includes(header) && cleanedKey.includes(footer)) {
-        cleanedKey = cleanedKey.split(header)[1].split(footer)[0];
-      }
-      
-      cleanedKey = cleanedKey.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '');
-      const matches = cleanedKey.match(/.{1,64}/g);
-      const formattedKey = matches ? matches.join('\n') : cleanedKey;
-      const finalKey = `${header}\n${formattedKey}\n${footer}`;
-
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey: finalKey
-        })
-      });
-      console.log('Firebase Admin inicializado com sucesso (Variáveis individuais)!');
-      return;
-    } catch (e: any) {
-      console.error('Erro ao inicializar com variáveis individuais:', e.message);
-      // Se falhar, tenta o método do JSON como fallback
-    }
-  }
-
-  // TENTATIVA 2: Usar o JSON completo (Método antigo/fallback)
-  const saJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!saJson) {
-    throw new Error('Configuração do Firebase não encontrada. Use FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL e FIREBASE_PRIVATE_KEY no Render.');
-  }
-
-  try {
-    let envVar = saJson.trim();
-    
-    // Suporte a Base64
-    if (!envVar.startsWith('{') && !envVar.startsWith("'") && !envVar.startsWith('"')) {
-      try {
-        const cleanBase64 = envVar.replace(/\s/g, '');
-        const decoded = Buffer.from(cleanBase64, 'base64').toString('utf-8');
-        const sanitizedDecoded = decoded.replace(/\xA0/g, ' ');
-        if (sanitizedDecoded.trim().startsWith('{')) {
-          envVar = sanitizedDecoded.trim();
-        }
-      } catch (e) {}
-    }
-    
-    if ((envVar.startsWith("'") && envVar.endsWith("'")) || (envVar.startsWith('"') && envVar.endsWith('"'))) {
-      envVar = envVar.slice(1, -1);
-    }
-    
-    let serviceAccount: any;
-    try {
-      serviceAccount = JSON.parse(envVar);
-    } catch (parseErr) {
-      const flattened = envVar.replace(/\r?\n|\r/g, ' ');
-      try {
-        serviceAccount = JSON.parse(flattened);
-      } catch (e) {
-        const start = envVar.indexOf('{');
-        const end = envVar.lastIndexOf('}');
-        if (start !== -1 && end !== -1) {
-          serviceAccount = JSON.parse(envVar.substring(start, end + 1));
-        } else {
-          throw new Error('JSON Inválido');
-        }
-      }
-    }
-
-    const pId = (serviceAccount.project_id || serviceAccount.projectId || '').toString().trim();
-    const cEmail = (serviceAccount.client_email || serviceAccount.clientEmail || '').toString().trim();
-    let pKey = serviceAccount.private_key || serviceAccount.privateKey;
-
-    if (typeof pKey === 'string') {
-      const header = '-----BEGIN PRIVATE KEY-----';
-      const footer = '-----END PRIVATE KEY-----';
-      let cleaned = pKey.trim();
-      if (cleaned.includes(header) && cleaned.includes(footer)) {
-        cleaned = cleaned.split(header)[1].split(footer)[0];
-      }
-      cleaned = cleaned.replace(/\\n/g, '').replace(/\n/g, '').replace(/\s/g, '');
-      const matches = cleaned.match(/.{1,64}/g);
-      pKey = `${header}\n${matches ? matches.join('\n') : cleaned}\n${footer}`;
-    }
-
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: pId,
-        clientEmail: cEmail,
-        privateKey: pKey
-      })
-    });
-    console.log('Firebase Admin inicializado com sucesso (JSON)!');
-  } catch (e: any) {
-    console.error('Erro fatal na inicialização do Firebase:', e.message);
-    throw new Error(`Erro no Firebase: ${e.message}`);
-  }
-}
-
-// Helper function to send Firebase push notifications
-async function sendFirebasePush(title: string, body: string, token: string) {
-  try {
-    initializeFirebaseAdmin();
-
-    const message = {
-      notification: {
-        title: title,
-        body: body,
-      },
-      // Configurações específicas para Web
-      webpush: {
-        notification: {
-          title: title,
-          body: body,
-          icon: '/logo192.png',
-          badge: '/logo192.png',
-          tag: 'overdue-contract',
-          renotify: true
-        },
-        fcmOptions: {
-          link: '/dashboard'
-        }
-      },
-      // Configurações específicas para Android
-      android: {
-        priority: 'high' as const,
-        notification: {
-          channelId: 'overdue_contracts',
-          priority: 'high' as const,
-          defaultSound: true,
-          defaultVibrateTimings: true
-        }
-      },
-      // Configurações específicas para iOS
-      apns: {
-        payload: {
-          aps: {
-            alert: {
-              title: title,
-              body: body
-            },
-            sound: 'default',
-            badge: 1
-          }
-        }
-      },
-      token: token,
-    };
-
-    console.log(`Enviando mensagem FCM para o token: ${token.substring(0, 15)}...`);
-    const response = await admin.messaging().send(message);
-    console.log('Successfully sent message:', response);
-    return response;
-  } catch (error: any) {
-    console.error('Error sending Firebase message:', error);
-    throw error;
-  }
-}
 
 async function startServer() {
   const app = express();
@@ -364,35 +186,7 @@ function isContractOverdue(c: any) {
   return now.getTime() >= nextInstallmentDueDate.getTime();
 }
 
-// Helper function to get client name for a contract
-async function getClientName(supabase: any, clientId: string) {
-  try {
-    const { data } = await supabase
-      .from('clients')
-      .select('full_name')
-      .eq('id', clientId)
-      .single();
-    return data?.full_name || 'um cliente';
-  } catch (e) {
-    return 'um cliente';
-  }
-}
-
-// Helper function to get user push token
-async function getUserPushToken(supabase: any, userId: string) {
-  try {
-    const { data } = await supabase
-      .from('profiles')
-      .select('push_token')
-      .eq('id', userId)
-      .single();
-    return data?.push_token;
-  } catch (e) {
-    return null;
-  }
-}
-
-// --- CRON JOB: Check for overdue contracts and send push notifications ---
+// --- CRON JOB: Check for overdue contracts and update status ---
 const checkAndSendOverdueNotifications = async () => {
   console.log('Running check for overdue contracts...');
   if (!supabase) {
@@ -412,7 +206,7 @@ const checkAndSendOverdueNotifications = async () => {
       return { success: false, message: 'Error fetching contracts' };
     }
 
-    let sentCount = 0;
+    let updatedCount = 0;
     const overdueList = contracts?.filter(isContractOverdue) || [];
 
     if (overdueList.length > 0) {
@@ -425,25 +219,10 @@ const checkAndSendOverdueNotifications = async () => {
             .from('contracts')
             .update({ status: 'overdue' })
             .eq('id', contract.id);
-        }
-
-        const clientName = await getClientName(supabase, contract.client_id);
-        const pushToken = await getUserPushToken(supabase, contract.user_id);
-
-        if (pushToken) {
-          try {
-            await sendFirebasePush(
-              'Contrato Vencido! ⚠️',
-              `O contrato do cliente ${clientName} está vencido!`,
-              pushToken
-            );
-            sentCount++;
-          } catch (pushError) {
-            console.error(`Failed to send push in cron:`, pushError);
-          }
+          updatedCount++;
         }
       }
-      return { success: true, message: `Processados ${overdueList.length} contratos. Enviadas ${sentCount} notificações.` };
+      return { success: true, message: `Processados ${overdueList.length} contratos. Atualizados ${updatedCount} para status overdue.` };
     }
 
     return { success: true, message: 'Nenhum contrato vencido encontrado.' };
@@ -590,84 +369,6 @@ const checkAndSendOverdueNotifications = async () => {
         is_approved: paymentInfo.status === 'approved'
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Test Push Notification
-  app.post('/api/test-push', async (req, res) => {
-    try {
-      const { userId } = req.body;
-      if (!userId) {
-        return res.status(400).json({ error: 'Missing userId' });
-      }
-
-      const pushToken = await getUserPushToken(supabase, userId);
-      if (!pushToken) {
-        return res.status(404).json({ error: 'Usuário não possui token de notificação registrado.' });
-      }
-
-      // Fetch all active or overdue contracts for this user
-      const { data: contracts, error } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('user_id', userId)
-        .or('status.eq.active,status.eq.overdue');
-
-      if (error) {
-        console.error('Error fetching contracts for test:', error);
-        return res.status(500).json({ error: 'Erro ao buscar contratos vencidos' });
-      }
-
-      const overdueList = contracts?.filter(isContractOverdue) || [];
-      console.log(`Test Push: Found ${overdueList.length} overdue contracts for user ${userId}`);
-
-      if (overdueList.length > 0) {
-        let sentCount = 0;
-        const errors: string[] = [];
-        
-        for (const contract of overdueList) {
-          // Update status to overdue if it was active
-          if (contract.status === 'active') {
-            await supabase
-              .from('contracts')
-              .update({ status: 'overdue' })
-              .eq('id', contract.id);
-          }
-
-          const clientName = await getClientName(supabase, contract.client_id);
-
-          try {
-            console.log(`Enviando push para token: ${pushToken.substring(0, 10)}...`);
-            await sendFirebasePush(
-              'Contrato Vencido! ⚠️',
-              `O contrato do cliente ${clientName} está vencido!`,
-              pushToken
-            );
-            sentCount++;
-          } catch (pushError: any) {
-            console.error(`Failed to send push in test for contract ${contract.id}:`, pushError);
-            errors.push(`${contract.id}: ${pushError.message}`);
-          }
-        }
-        
-        const message = `Foram encontrados ${overdueList.length} contratos vencidos e ${sentCount} notificações foram enviadas.${errors.length > 0 ? ' Erros: ' + errors.join(', ') : ''}`;
-        res.json({ success: true, message, sentCount, totalOverdue: overdueList.length });
-      } else {
-        // Send a simulated notification if no overdue contracts are found so they can still test it
-        try {
-          await sendFirebasePush(
-            'Contrato Vencido! ⚠️ (Simulação)',
-            'Nenhum contrato vencido foi encontrado agora, mas é assim que a notificação aparecerá!',
-            pushToken
-          );
-          res.json({ success: true, message: 'Nenhum contrato vencido encontrado. Uma notificação de simulação foi enviada para teste.', simulated: true });
-        } catch (pushError: any) {
-          throw pushError;
-        }
-      }
-    } catch (error: any) {
-      console.error('Error sending test push:', error);
       res.status(500).json({ error: error.message });
     }
   });

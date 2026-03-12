@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { UserProfile, Client, Contract } from '../types';
+import { scheduleContractNotifications } from '../services/localNotifications';
 import UpgradeModal from '../components/UpgradeModal';
 import { BackupModal } from '../components/BackupModal';
 import { 
@@ -229,6 +230,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
     }
   };
 
+  useEffect(() => {
+    if (contracts.length > 0 && clients.length > 0) {
+      scheduleContractNotifications(contracts, clients);
+    }
+  }, [contracts, clients]);
+
   const getInstallmentDueDate = (c: Contract, installmentIndex: number) => {
     const firstDueDate = new Date(c.end_date + 'T12:00:00');
     if (c.months > 1) {
@@ -365,7 +372,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
                 <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                <p className="font-black text-violet-800">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
+                <p className="font-black text-[#21b645]">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
               </div>
             )}
           </div>
@@ -400,11 +407,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           </div>
           <button onClick={() => setShowProfile(true)} className="flex items-center gap-3 group">
             <div className="text-right flex flex-col items-end">
-              <p className="text-[10px] font-black text-slate-900 uppercase leading-none flex items-center gap-1">
+              <p className="text-[12px] font-black text-slate-900 uppercase leading-none flex items-center gap-1">
                 {userProfile?.full_name?.split(' ')[0]}
                 {isPro && <Crown size={12} className="text-violet-600 fill-violet-600" />}
               </p>
-              <p className={`text-[7px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</p>
+              <p className={`text-[9px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</p>
             </div>
             <div className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : 'bg-white border-slate-200 text-slate-600'}`}>
               <User size={16} />
@@ -1889,13 +1896,13 @@ const InfoItem = ({ icon, label, value }: any) => (
 
 const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest, onBackupRequest, onRefresh }: { user: UserProfile, contracts: Contract[], clients: Client[], onClose: () => void, onUpgradeRequest: () => void, onBackupRequest: () => void, onRefresh: () => void }) => {
   const [showProMessage, setShowProMessage] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(!!user.push_token);
+  const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(localStorage.getItem('local_notifications_enabled') === 'true');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
-    setPushEnabled(!!user.push_token);
-  }, [user.push_token]);
+    setLocalNotificationsEnabled(localStorage.getItem('local_notifications_enabled') === 'true');
+  }, []);
 
   const generateReport = async () => {
     if (!user.is_pro) {
@@ -2365,33 +2372,15 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           <button 
             type="button" 
             onClick={user.is_pro ? async () => {
-              const newState = !pushEnabled;
-              setPushEnabled(newState);
+              const newState = !localNotificationsEnabled;
+              setLocalNotificationsEnabled(newState);
+              localStorage.setItem('local_notifications_enabled', newState.toString());
               if (newState) {
-                user.push_token = 'pending'; // Atualiza localmente para manter o botão ligado
-                import('../services/pushNotifications').then(({ setupPushNotifications }) => {
-                  setupPushNotifications(user.id).then(() => {
-                    // Refresh user data to get the actual token
-                    supabase.from('profiles').select('push_token').eq('id', user.id).single().then(({ data }) => {
-                      if (data && data.push_token) {
-                        user.push_token = data.push_token;
-                        setPushEnabled(true);
-                      } else {
-                        // Se falhou em pegar o token, desativa o botão
-                        user.push_token = null;
-                        setPushEnabled(false);
-                      }
-                    });
-                  }).catch(() => {
-                    // Reverte o botão se der erro
-                    user.push_token = null;
-                    setPushEnabled(false);
+                import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
+                  setupLocalNotifications().then(() => {
+                    scheduleContractNotifications(contracts, clients);
                   });
                 });
-              } else {
-                // Desativar notificações: remover o token do banco de dados
-                await supabase.from('profiles').update({ push_token: null }).eq('id', user.id);
-                user.push_token = null; // Atualiza o objeto local para manter sincronizado
               }
             } : () => setShowProMessage(true)} 
             className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${user.is_pro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
@@ -2399,60 +2388,50 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
             </div>
-            <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${user.is_pro && pushEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}>
-              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${user.is_pro && pushEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+            <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${user.is_pro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}>
+              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${user.is_pro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
             </div>
           </button>
 
-          {user.is_pro && pushEnabled && (
+          {user.is_pro && localNotificationsEnabled && (
             <div className="flex flex-col gap-2 mt-2">
               <button 
                 type="button" 
                 onClick={async () => {
                   try {
-                    const API_URL = (import.meta as any).env?.DEV ? '' : ((import.meta as any).env?.VITE_API_URL || '');
-                    console.log(`Triggering test push at: ${API_URL}/api/test-push`);
+                    const { LocalNotifications } = await import('@capacitor/local-notifications');
+                    const { Capacitor } = await import('@capacitor/core');
                     
-                    const res = await fetch(`${API_URL}/api/test-push`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ userId: user.id })
-                    });
-                    
-                    if (!res.ok) {
-                      const text = await res.text();
-                      try {
-                        const errData = JSON.parse(text);
-                        if (errData.error && errData.error.includes('no push token registered')) {
-                          throw new Error('Você ainda não ativou as notificações ou está usando o navegador. As notificações só funcionam no aplicativo instalado no celular.');
-                        }
-                        console.error('Server error:', text);
-                        throw new Error(errData.error || `Erro do servidor (${res.status})`);
-                      } catch(e: any) {
-                        if (e.message.includes('navegador')) throw e;
-                        console.error('Server error:', text);
-                        throw new Error(`Erro do servidor (${res.status}): ${text.substring(0, 100)}`);
+                    if (Capacitor.isNativePlatform()) {
+                      const permStatus = await LocalNotifications.checkPermissions();
+                      if (permStatus.display !== 'granted') {
+                        alert('Permissão de notificação negada. Ative nas configurações do seu celular.');
+                        return;
+                      }
+                      
+                      await LocalNotifications.schedule({
+                        notifications: [{
+                          title: 'Notificação de Teste',
+                          body: 'As notificações locais estão funcionando perfeitamente!',
+                          id: 99999,
+                          schedule: { at: new Date(Date.now() + 5000) }, // 5 seconds from now
+                          sound: 'default'
+                        }]
+                      });
+                      alert('Uma notificação de teste foi agendada e aparecerá em 5 segundos. Feche o app ou deixe em segundo plano para testar.');
+                    } else {
+                      if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification('Notificação de Teste', {
+                          body: 'As notificações web estão funcionando perfeitamente!',
+                          icon: '/vite.svg'
+                        });
+                        alert('Notificação web enviada!');
+                      } else {
+                        alert('Permissão de notificação web negada ou não suportada.');
                       }
                     }
-                    
-                    const data = await res.json();
-                    
-                    if (data.sentCount > 0) {
-                      alert(`Sucesso! Foram enviadas ${data.sentCount} notificações reais para os seus contratos vencidos. Verifique as notificações do seu celular.`);
-                    } else if (data.simulated) {
-                      alert(`Nenhum contrato vencido encontrado, então enviamos uma NOTIFICAÇÃO DE TESTE simulada para o seu celular. Verifique agora!`);
-                    } else {
-                      alert(`Sucesso: ${data.message}`);
-                    }
                   } catch (err: any) {
-                    let msg = err.message;
-                    if (msg === 'Failed to fetch') {
-                      msg = 'Falha na conexão com o servidor. Verifique se o backend está rodando.';
-                      console.error('Fetch error:', err);
-                    } else if (!msg.includes('navegador')) {
-                      console.error('Fetch error:', err);
-                    }
-                    alert(msg.includes('navegador') ? msg : `Erro ao testar: ${msg}`);
+                    alert(`Erro ao testar notificações: ${err.message}`);
                   }
                 }} 
                 className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100 active:scale-95 border-emerald-200"
@@ -2460,7 +2439,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 <Bell size={14} className="mr-2"/> TESTAR NOTIFICAÇÃO NO MEU CELULAR
               </button>
               <p className="text-[8px] text-slate-400 text-center font-medium uppercase tracking-tighter mt-2">
-                DICA: SE NÃO RECEBER, DESATIVE E ATIVE AS NOTIFICAÇÕES ACIMA PARA REFRESCAR O TOKEN.
+                AS NOTIFICAÇÕES LOCAIS AVISARÃO SOBRE CONTRATOS VENCIDOS E VENCIMENTOS DO DIA.
               </p>
             </div>
           )}

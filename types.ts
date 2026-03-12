@@ -10,7 +10,6 @@ export interface UserProfile {
   pro_started_at?: string; // Data de início do plano PRO
   birth_date?: string;
   password?: string;
-  push_token?: string | null;
 }
 
 export interface Client {

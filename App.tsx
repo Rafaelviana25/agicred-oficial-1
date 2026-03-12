@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from './services/supabase';
-import { setupPushNotifications } from './services/pushNotifications';
+import { setupLocalNotifications } from './services/localNotifications';
 import Login from './views/Login';
 import Register from './views/Register';
 import Dashboard from './views/Dashboard';
@@ -91,7 +91,7 @@ const App: React.FC = () => {
     if (data) {
       setProfile(data);
       setHasSchemaError(false);
-      setupPushNotifications(userId);
+      setupLocalNotifications();
     } else {
       // Usuário logado mas sem registro na tabela profiles
       // Tentar criar perfil básico automaticamente

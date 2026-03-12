@@ -69,7 +69,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     
     setLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = (import.meta as any).env.VITE_API_URL || '';
       if (!apiUrl) {
         alert("Erro: URL da API não configurada. O aplicativo não consegue se comunicar com o servidor.");
         setLoading(false);
@@ -111,7 +111,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   const checkStatus = async () => {
     if (!paymentData) return false;
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const apiUrl = (import.meta as any).env.VITE_API_URL || '';
       const response = await fetch(`${apiUrl}/api/payment-status/${paymentData.id}`);
       const data = await response.json();
       
