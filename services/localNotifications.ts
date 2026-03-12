@@ -70,7 +70,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     // If due date is in the future, schedule it
     if (dueDate.getTime() > now.getTime()) {
       notificationsToSchedule.push({
-        title: 'Vencimento de Contrato',
+        title: 'Vencimento Hoje',
         body: `O contrato de ${clientName} vence hoje.`,
         id: idCounter++,
         channelId: channelId,
@@ -84,8 +84,8 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       tomorrow.setHours(hours, minutes, 0, 0);
       
       notificationsToSchedule.push({
-        title: 'Contrato Atrasado!',
-        body: `O contrato de ${clientName} está atrasado.`,
+        title: 'Contrato Vencido!',
+        body: `O contrato de ${clientName} está vencido.`,
         id: idCounter++,
         channelId: channelId,
         schedule: { at: tomorrow },
