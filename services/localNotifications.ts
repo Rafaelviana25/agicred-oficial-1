@@ -25,6 +25,24 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
   const notificationsToSchedule: any[] = [];
   let idCounter = 1;
 
+  const timeStr = localStorage.getItem('notif_time') || '09:00';
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  const hasSound = localStorage.getItem('notif_sound') !== 'false';
+  const hasVib = localStorage.getItem('notif_vib') !== 'false';
+
+  let channelId = 'default';
+  if (Capacitor.getPlatform() === 'android') {
+    channelId = `agicred_alerts_${hasSound ? 's' : 'ns'}_${hasVib ? 'v' : 'nv'}`;
+    await LocalNotifications.createChannel({
+      id: channelId,
+      name: 'Alertas Agicred',
+      description: 'Notificações de vencimento',
+      importance: 4,
+      vibration: hasVib,
+      sound: hasSound ? 'default' : undefined
+    });
+  }
+
   contracts.forEach(c => {
     if (c.status === 'paid') return;
     
@@ -44,7 +62,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     // Schedule for the next unpaid installment
     const dueDate = new Date(firstDueDate);
     dueDate.setMonth(dueDate.getMonth() + installmentsFullyPaid);
-    dueDate.setHours(9, 0, 0, 0); // 9 AM
+    dueDate.setHours(hours, minutes, 0, 0);
 
     const client = clients.find(cl => cl.id === c.client_id);
     const clientName = client ? client.full_name : 'Cliente';
@@ -55,21 +73,23 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
         title: 'Vencimento de Contrato',
         body: `O contrato de ${clientName} vence hoje.`,
         id: idCounter++,
+        channelId: channelId,
         schedule: { at: dueDate },
-        sound: 'default',
+        sound: hasSound ? 'default' : undefined,
       });
     } else {
-      // If it's already overdue, schedule for tomorrow at 9 AM to remind them
+      // If it's already overdue, schedule for tomorrow to remind them
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
+      tomorrow.setHours(hours, minutes, 0, 0);
       
       notificationsToSchedule.push({
         title: 'Contrato Atrasado!',
         body: `O contrato de ${clientName} está atrasado.`,
         id: idCounter++,
+        channelId: channelId,
         schedule: { at: tomorrow },
-        sound: 'default',
+        sound: hasSound ? 'default' : undefined,
         isOverdue: true, // Custom flag for web
       });
     }

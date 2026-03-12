@@ -45,7 +45,10 @@ import {
   Bell,
   Check,
   BarChart3,
-  FileBarChart
+  FileBarChart,
+  Volume2,
+  VolumeX,
+  Smartphone
 } from 'lucide-react';
 
 import { AgicredLogo } from '../components/AgicredLogo';
@@ -1897,12 +1900,44 @@ const InfoItem = ({ icon, label, value }: any) => (
 const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest, onBackupRequest, onRefresh }: { user: UserProfile, contracts: Contract[], clients: Client[], onClose: () => void, onUpgradeRequest: () => void, onBackupRequest: () => void, onRefresh: () => void }) => {
   const [showProMessage, setShowProMessage] = useState(false);
   const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(localStorage.getItem('local_notifications_enabled') === 'true');
+  const [notifTime, setNotifTime] = useState(localStorage.getItem('notif_time') || '09:00');
+  const [notifSound, setNotifSound] = useState(localStorage.getItem('notif_sound') !== 'false');
+  const [notifVib, setNotifVib] = useState(localStorage.getItem('notif_vib') !== 'false');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     setLocalNotificationsEnabled(localStorage.getItem('local_notifications_enabled') === 'true');
   }, []);
+
+  const rescheduleNotifications = () => {
+    if (localStorage.getItem('local_notifications_enabled') === 'true') {
+      import('../services/localNotifications').then(({ scheduleContractNotifications }) => {
+        scheduleContractNotifications(contracts, clients);
+      });
+    }
+  };
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNotifTime(val);
+    localStorage.setItem('notif_time', val);
+    rescheduleNotifications();
+  };
+
+  const toggleSound = () => {
+    const val = !notifSound;
+    setNotifSound(val);
+    localStorage.setItem('notif_sound', val.toString());
+    rescheduleNotifications();
+  };
+
+  const toggleVib = () => {
+    const val = !notifVib;
+    setNotifVib(val);
+    localStorage.setItem('notif_vib', val.toString());
+    rescheduleNotifications();
+  };
 
   const generateReport = async () => {
     if (!user.is_pro) {
@@ -2395,6 +2430,53 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
           {user.is_pro && localNotificationsEnabled && (
             <div className="flex flex-col gap-2 mt-2">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Clock size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Horário do Aviso</span>
+                  </div>
+                  <input 
+                    type="time" 
+                    value={notifTime}
+                    onChange={handleTimeChange}
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-violet-500"
+                  />
+                </div>
+                
+                <div className="h-px bg-slate-200 w-full"></div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    {notifSound ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                    <span className="text-[10px] font-black uppercase tracking-widest">Som da Notificação</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={toggleSound}
+                    className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${notifSound ? 'bg-violet-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${notifSound ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                <div className="h-px bg-slate-200 w-full"></div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Smartphone size={16} className={notifVib ? 'animate-pulse' : ''} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Vibração</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={toggleVib}
+                    className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${notifVib ? 'bg-violet-500' : 'bg-slate-300'}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full bg-white transition-transform ${notifVib ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </div>
+
               <button 
                 type="button" 
                 onClick={async () => {
@@ -2409,13 +2491,27 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                         return;
                       }
                       
+                      let channelId = 'default';
+                      if (Capacitor.getPlatform() === 'android') {
+                        channelId = `agicred_alerts_${notifSound ? 's' : 'ns'}_${notifVib ? 'v' : 'nv'}`;
+                        await LocalNotifications.createChannel({
+                          id: channelId,
+                          name: 'Alertas Agicred',
+                          description: 'Notificações de vencimento',
+                          importance: 4,
+                          vibration: notifVib,
+                          sound: notifSound ? 'default' : undefined
+                        });
+                      }
+
                       await LocalNotifications.schedule({
                         notifications: [{
                           title: 'Notificação de Teste',
                           body: 'As notificações locais estão funcionando perfeitamente!',
                           id: 99999,
+                          channelId: channelId,
                           schedule: { at: new Date(Date.now() + 5000) }, // 5 seconds from now
-                          sound: 'default'
+                          sound: notifSound ? 'default' : undefined
                         }]
                       });
                       alert('Uma notificação de teste foi agendada e aparecerá em 5 segundos. Feche o app ou deixe em segundo plano para testar.');
