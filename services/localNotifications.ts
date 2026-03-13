@@ -20,6 +20,9 @@ export const setupLocalNotifications = async () => {
   }
 };
 
+// Store timeouts to clear them if rescheduled
+let webNotificationTimeouts: any[] = [];
+
 export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[]) => {
   const now = new Date();
   const notificationsToSchedule: any[] = [];
@@ -37,8 +40,9 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       id: channelId,
       name: 'Alertas Agicred',
       description: 'Notificações de vencimento',
-      importance: 4,
+      importance: 5,
       vibration: hasVib,
+      visibility: 1,
       sound: hasSound ? 'default' : undefined
     });
   }
@@ -59,39 +63,77 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       firstDueDate.setMonth(firstDueDate.getMonth() - (c.months - 1));
     }
 
-    // Schedule for the next unpaid installment
+    // Next unpaid installment due date
     const dueDate = new Date(firstDueDate);
     dueDate.setMonth(dueDate.getMonth() + installmentsFullyPaid);
-    dueDate.setHours(hours, minutes, 0, 0);
-
+    
     const client = clients.find(cl => cl.id === c.client_id);
     const clientName = client ? client.full_name : 'Cliente';
 
-    // If due date is in the future, schedule it
-    if (dueDate.getTime() > now.getTime()) {
-      notificationsToSchedule.push({
-        title: 'Vencimento Hoje',
-        body: `O contrato de ${clientName} vence hoje.`,
-        id: idCounter++,
-        channelId: channelId,
-        schedule: { at: dueDate },
-        sound: hasSound ? 'default' : undefined,
-      });
+    // Calculate the notification time for today
+    const todayNotifTime = new Date();
+    todayNotifTime.setHours(hours, minutes, 0, 0);
+
+    // If the contract is due today or already overdue
+    const isDueToday = dueDate.toDateString() === now.toDateString();
+    const isOverdue = dueDate.getTime() < now.getTime() && !isDueToday;
+
+    if (isDueToday || isOverdue) {
+      if (todayNotifTime.getTime() > now.getTime()) {
+        // Schedule for today
+        notificationsToSchedule.push({
+          title: isDueToday ? 'Vencimento Hoje' : 'Contrato Vencido!',
+          body: isDueToday ? `O contrato de ${clientName} vence hoje.` : `O contrato de ${clientName} está vencido.`,
+          id: idCounter++,
+          channelId: channelId,
+          schedule: { 
+            at: todayNotifTime,
+            allowWhileIdle: true
+          },
+          sound: hasSound ? 'default' : undefined,
+          isOverdue: isOverdue
+        });
+      } else {
+        // Notification time for today passed, schedule for tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(hours, minutes, 0, 0);
+        
+        notificationsToSchedule.push({
+          title: 'Contrato Vencido!',
+          body: `O contrato de ${clientName} está vencido.`,
+          id: idCounter++,
+          channelId: channelId,
+          schedule: { 
+            at: tomorrow,
+            allowWhileIdle: true
+          },
+          sound: hasSound ? 'default' : undefined,
+          isOverdue: true
+        });
+      }
     } else {
-      // If it's already overdue, schedule for tomorrow to remind them
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(hours, minutes, 0, 0);
-      
-      notificationsToSchedule.push({
-        title: 'Contrato Vencido!',
-        body: `O contrato de ${clientName} está vencido.`,
-        id: idCounter++,
-        channelId: channelId,
-        schedule: { at: tomorrow },
-        sound: hasSound ? 'default' : undefined,
-        isOverdue: true, // Custom flag for web
-      });
+      // Future due date (not today, not overdue)
+      const futureNotifTime = new Date(dueDate);
+      futureNotifTime.setHours(hours, minutes, 0, 0);
+
+      // Only schedule if it's within a reasonable window (e.g., next 30 days) to avoid hitting limits
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+      if (futureNotifTime.getTime() > now.getTime() && futureNotifTime.getTime() < thirtyDaysFromNow.getTime()) {
+        notificationsToSchedule.push({
+          title: 'Vencimento em Breve',
+          body: `O contrato de ${clientName} vence em breve.`,
+          id: idCounter++,
+          channelId: channelId,
+          schedule: { 
+            at: futureNotifTime,
+            allowWhileIdle: true
+          },
+          sound: hasSound ? 'default' : undefined,
+        });
+      }
     }
   });
 
@@ -111,6 +153,10 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
   } else {
     // Web notifications
     if ("Notification" in window && Notification.permission === "granted") {
+      // Clear previous timeouts
+      webNotificationTimeouts.forEach(t => clearTimeout(t));
+      webNotificationTimeouts = [];
+
       // For web, we can't easily schedule for the future without a service worker.
       // So we just show notifications for contracts that are currently overdue.
       const overdueNotifications = notificationsToSchedule.filter(n => n.isOverdue);
@@ -129,6 +175,28 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           localStorage.setItem('lastOverdueNotificationDate', todayStr);
         }
       }
+
+      // NEW: Support for "scheduling" in the current session for testing
+      // If there are notifications scheduled for TODAY but in the FUTURE, 
+      // we can set a timeout to show them if the app stays open.
+      notificationsToSchedule.forEach(n => {
+        if (!n.isOverdue && n.schedule?.at) {
+          const scheduledTime = n.schedule.at.getTime();
+          const delay = scheduledTime - Date.now();
+          
+          if (delay > 0 && delay < 24 * 60 * 60 * 1000) { // Only if it's within the next 24 hours
+            const timeoutId = setTimeout(() => {
+              if (Notification.permission === "granted") {
+                new Notification(n.title, {
+                  body: n.body,
+                  icon: '/vite.svg'
+                });
+              }
+            }, delay);
+            webNotificationTimeouts.push(timeoutId);
+          }
+        }
+      });
     }
   }
 };

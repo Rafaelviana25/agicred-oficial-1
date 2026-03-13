@@ -2484,6 +2484,30 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     const { LocalNotifications } = await import('@capacitor/local-notifications');
                     const { Capacitor } = await import('@capacitor/core');
                     
+                    // Helper to find overdue contracts
+                    const overdue = contracts.filter(c => {
+                      if (c.status === 'paid') return false;
+                      const monthlyValue = Number(c.monthly_interest) || 0;
+                      if (monthlyValue <= 0) return false;
+                      const totalPaid = Number(c.paid_amount || 0);
+                      const installmentsFullyPaid = Math.floor(totalPaid / monthlyValue);
+                      if (installmentsFullyPaid >= c.months) return false;
+                      
+                      const firstDueDate = new Date(c.end_date + 'T12:00:00');
+                      if (c.months > 1) firstDueDate.setMonth(firstDueDate.getMonth() - (c.months - 1));
+                      const dueDate = new Date(firstDueDate);
+                      dueDate.setMonth(dueDate.getMonth() + installmentsFullyPaid);
+                      
+                      const now = new Date();
+                      now.setHours(12, 0, 0, 0);
+                      return now.getTime() >= dueDate.getTime();
+                    });
+
+                    const testTitle = overdue.length > 0 ? 'Teste: Contratos Vencidos' : 'Notificação de Teste';
+                    const testBody = overdue.length > 0 
+                      ? `O sistema identificou ${overdue.length} contrato(s) vencido(s). As notificações automáticas estão configuradas para o horário escolhido.`
+                      : 'As notificações estão funcionando perfeitamente! (Nenhum contrato vencido no momento)';
+
                     if (Capacitor.isNativePlatform()) {
                       const permStatus = await LocalNotifications.checkPermissions();
                       if (permStatus.display !== 'granted') {
@@ -2498,30 +2522,34 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                           id: channelId,
                           name: 'Alertas Agicred',
                           description: 'Notificações de vencimento',
-                          importance: 4,
+                          importance: 5,
                           vibration: notifVib,
+                          visibility: 1,
                           sound: notifSound ? 'default' : undefined
                         });
                       }
 
                       await LocalNotifications.schedule({
                         notifications: [{
-                          title: 'Notificação de Teste',
-                          body: 'As notificações locais estão funcionando perfeitamente!',
+                          title: testTitle,
+                          body: testBody,
                           id: 99999,
                           channelId: channelId,
-                          schedule: { at: new Date(Date.now() + 5000) }, // 5 seconds from now
+                          schedule: { 
+                            at: new Date(Date.now() + 5000),
+                            allowWhileIdle: true 
+                          },
                           sound: notifSound ? 'default' : undefined
                         }]
                       });
                       alert('Uma notificação de teste foi agendada e aparecerá em 5 segundos. Feche o app ou deixe em segundo plano para testar.');
                     } else {
                       if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification('Notificação de Teste', {
-                          body: 'As notificações web estão funcionando perfeitamente!',
+                        new Notification(testTitle, {
+                          body: testBody,
                           icon: '/vite.svg'
                         });
-                        alert('Notificação web enviada!');
+                        alert('Notificação web de teste enviada!');
                       } else {
                         alert('Permissão de notificação web negada ou não suportada.');
                       }

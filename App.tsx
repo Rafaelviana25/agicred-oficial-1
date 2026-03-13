@@ -32,14 +32,19 @@ const App: React.FC = () => {
 
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error("Session error:", error);
-        supabase.auth.signOut().catch(console.error);
+        console.error("Session error:", error.message);
+        // If the refresh token is invalid, we just clear the session state
+        // The Supabase client usually clears its own state, but we can force it
+        supabase.auth.signOut().catch(() => {});
+        setSession(null);
+      } else {
+        setSession(session);
+        if (session) fetchProfile(session.user.id, session);
       }
-      setSession(session);
-      if (session) fetchProfile(session.user.id, session);
       setLoading(false);
     }).catch(err => {
       console.error("Session catch error:", err);
+      setSession(null);
       setLoading(false);
     });
 
