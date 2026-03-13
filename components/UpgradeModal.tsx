@@ -181,6 +181,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-10 z-50 uppercase overflow-y-auto">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[60]" />
       <div className="glass-panel rounded-b-[3rem] lg:rounded-3xl max-w-2xl w-full p-6 lg:p-8 shadow-2xl relative overflow-hidden animate-in slide-in-from-top-10 duration-300 border border-slate-200 bg-white mb-10">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20">✕</button>
         

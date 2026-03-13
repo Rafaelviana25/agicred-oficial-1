@@ -4,12 +4,22 @@ import { Contract, Client } from '../types';
 
 export const setupLocalNotifications = async () => {
   if (Capacitor.isNativePlatform()) {
-    let permStatus = await LocalNotifications.checkPermissions();
-    if (permStatus.display === 'prompt') {
-      permStatus = await LocalNotifications.requestPermissions();
-    }
-    if (permStatus.display !== 'granted') {
-      console.warn("Permissão de notificação local negada.");
+    try {
+      let permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display === 'prompt' || permStatus.display === 'denied') {
+        permStatus = await LocalNotifications.requestPermissions();
+      }
+      
+      if (permStatus.display !== 'granted') {
+        console.warn("Permissão de notificação local não concedida.");
+      }
+
+      // On Android, we might need to check for exact alarm permission
+      // but Capacitor doesn't expose this directly. 
+      // Requesting permissions again with specific types can help.
+      await LocalNotifications.requestPermissions();
+    } catch (e) {
+      console.error("Erro ao configurar permissões de notificação:", e);
     }
   } else {
     if ("Notification" in window) {
@@ -24,27 +34,55 @@ export const setupLocalNotifications = async () => {
 let webNotificationTimeouts: any[] = [];
 
 export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[]) => {
+  const isEnabled = localStorage.getItem('local_notifications_enabled') === 'true';
+  
+  if (Capacitor.isNativePlatform()) {
+    const pending = await LocalNotifications.getPending();
+    if (pending.notifications.length > 0) {
+      await LocalNotifications.cancel(pending);
+    }
+    if (!isEnabled) return;
+  } else {
+    webNotificationTimeouts.forEach(t => clearTimeout(t));
+    webNotificationTimeouts = [];
+    if (!isEnabled) return;
+  }
+
   const now = new Date();
   const notificationsToSchedule: any[] = [];
   let idCounter = 1;
 
   const timeStr = localStorage.getItem('notif_time') || '09:00';
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  let [hours, minutes] = timeStr.split(':').map(Number);
+  
+  if (isNaN(hours) || isNaN(minutes)) {
+    hours = 9;
+    minutes = 0;
+  }
+
+  // Use a stable base time for all calculations in this pass
+  const baseDate = new Date(now);
+  console.log(`Agendando notificações para as ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} (Base: ${baseDate.toISOString()})`);
+
   const hasSound = localStorage.getItem('notif_sound') !== 'false';
   const hasVib = localStorage.getItem('notif_vib') !== 'false';
 
-  let channelId = 'default';
+  let channelId = 'agicred_alerts';
   if (Capacitor.getPlatform() === 'android') {
     channelId = `agicred_alerts_${hasSound ? 's' : 'ns'}_${hasVib ? 'v' : 'nv'}`;
-    await LocalNotifications.createChannel({
-      id: channelId,
-      name: 'Alertas Agicred',
-      description: 'Notificações de vencimento',
-      importance: 5,
-      vibration: hasVib,
-      visibility: 1,
-      sound: hasSound ? 'default' : undefined
-    });
+    try {
+      await LocalNotifications.createChannel({
+        id: channelId,
+        name: 'Alertas Agicred',
+        description: 'Notificações de vencimento',
+        importance: 5,
+        vibration: hasVib,
+        visibility: 1,
+        sound: hasSound ? 'default' : undefined
+      });
+    } catch (e) {
+      console.error("Erro ao criar canal de notificação:", e);
+    }
   }
 
   contracts.forEach(c => {
@@ -54,7 +92,8 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     if (monthlyValue <= 0) return;
 
     const totalPaid = Number(c.paid_amount || 0);
-    const installmentsFullyPaid = Math.floor(totalPaid / monthlyValue);
+    // Use integer math (cents) to avoid floating point errors
+    const installmentsFullyPaid = Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyValue * 100));
     
     if (installmentsFullyPaid >= c.months) return;
 
@@ -71,41 +110,57 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     const clientName = client ? client.full_name : 'Cliente';
 
     // Calculate the notification time for today
-    const todayNotifTime = new Date();
+    const todayNotifTime = new Date(baseDate);
     todayNotifTime.setHours(hours, minutes, 0, 0);
 
     // If the contract is due today or already overdue
-    const isDueToday = dueDate.toDateString() === now.toDateString();
-    const isOverdue = dueDate.getTime() < now.getTime() && !isDueToday;
+    const isDueToday = dueDate.toDateString() === baseDate.toDateString();
+    const isOverdue = dueDate.getTime() < baseDate.getTime() && !isDueToday;
 
     if (isDueToday || isOverdue) {
-      if (todayNotifTime.getTime() > now.getTime()) {
-        // Schedule for today
-        notificationsToSchedule.push({
-          title: isDueToday ? 'Vencimento Hoje' : 'Contrato Vencido!',
-          body: isDueToday ? `O contrato de ${clientName} vence hoje.` : `O contrato de ${clientName} está vencido.`,
-          id: idCounter++,
-          channelId: channelId,
-          schedule: { 
-            at: todayNotifTime,
-            allowWhileIdle: true
-          },
-          sound: hasSound ? 'default' : undefined,
-          isOverdue: isOverdue
-        });
-      } else {
-        // Notification time for today passed, schedule for tomorrow
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(hours, minutes, 0, 0);
-        
+      if (isOverdue) {
+        // For overdue contracts, schedule a REPEATING notification so it reminds every day
+        // until the user opens the app and it gets rescheduled (or contract is paid)
         notificationsToSchedule.push({
           title: 'Contrato Vencido!',
           body: `O contrato de ${clientName} está vencido.`,
-          id: idCounter++,
+          id: 1000 + idCounter++,
           channelId: channelId,
           schedule: { 
-            at: tomorrow,
+            on: { hour: hours, minute: minutes },
+            repeats: true,
+            allowWhileIdle: true
+          },
+          sound: hasSound ? 'default' : undefined,
+          isOverdue: true
+        });
+      } else if (todayNotifTime.getTime() > baseDate.getTime()) {
+        // Due today and time is in the future
+        const staggeredTime = new Date(todayNotifTime.getTime() + (idCounter * 1000));
+        
+        notificationsToSchedule.push({
+          title: 'Vencimento Hoje',
+          body: `O contrato de ${clientName} vence hoje.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          schedule: { 
+            at: staggeredTime,
+            allowWhileIdle: true
+          },
+          sound: hasSound ? 'default' : undefined,
+          isOverdue: false
+        });
+      } else {
+        // Due today but time already passed, schedule for tomorrow as "Overdue"
+        // We use 'on' with repeats: true so it keeps notifying until paid
+        notificationsToSchedule.push({
+          title: 'Contrato Vencido!',
+          body: `O contrato de ${clientName} está vencido.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          schedule: { 
+            on: { hour: hours, minute: minutes },
+            repeats: true,
             allowWhileIdle: true
           },
           sound: hasSound ? 'default' : undefined,
@@ -118,17 +173,20 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       futureNotifTime.setHours(hours, minutes, 0, 0);
 
       // Only schedule if it's within a reasonable window (e.g., next 30 days) to avoid hitting limits
-      const thirtyDaysFromNow = new Date();
+      const thirtyDaysFromNow = new Date(baseDate);
       thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-      if (futureNotifTime.getTime() > now.getTime() && futureNotifTime.getTime() < thirtyDaysFromNow.getTime()) {
+      if (futureNotifTime.getTime() > baseDate.getTime() && futureNotifTime.getTime() < thirtyDaysFromNow.getTime()) {
+        // Add stagger
+        const staggeredTime = new Date(futureNotifTime.getTime() + (idCounter * 1000));
+
         notificationsToSchedule.push({
           title: 'Vencimento em Breve',
           body: `O contrato de ${clientName} vence em breve.`,
-          id: idCounter++,
+          id: 1000 + idCounter++,
           channelId: channelId,
           schedule: { 
-            at: futureNotifTime,
+            at: staggeredTime,
             allowWhileIdle: true
           },
           sound: hasSound ? 'default' : undefined,
@@ -138,25 +196,25 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
   });
 
   if (Capacitor.isNativePlatform()) {
-    const permStatus = await LocalNotifications.checkPermissions();
-    if (permStatus.display !== 'granted') return;
+    try {
+      const permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display !== 'granted') {
+        console.warn("Sem permissão para agendar notificações.");
+        return;
+      }
 
-    // Cancel previous notifications
-    const pending = await LocalNotifications.getPending();
-    if (pending.notifications.length > 0) {
-      await LocalNotifications.cancel(pending);
-    }
-
-    if (notificationsToSchedule.length > 0) {
-      await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+      if (notificationsToSchedule.length > 0) {
+        console.log(`Agendando ${notificationsToSchedule.length} notificações no dispositivo:`, notificationsToSchedule);
+        await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+      } else {
+        console.log("Nenhuma notificação para agendar (sem contratos vencendo hoje ou atrasados).");
+      }
+    } catch (e) {
+      console.error("Erro ao agendar notificações locais:", e);
     }
   } else {
     // Web notifications
     if ("Notification" in window && Notification.permission === "granted") {
-      // Clear previous timeouts
-      webNotificationTimeouts.forEach(t => clearTimeout(t));
-      webNotificationTimeouts = [];
-
       // For web, we can't easily schedule for the future without a service worker.
       // So we just show notifications for contracts that are currently overdue.
       const overdueNotifications = notificationsToSchedule.filter(n => n.isOverdue);
@@ -197,6 +255,48 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           }
         }
       });
+    }
+  }
+};
+
+export const sendTestNotification = async () => {
+  const now = new Date();
+  const testTime = new Date(now.getTime() + 5000); // 5 seconds from now
+  
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: 'Teste de Notificação',
+            body: 'Se você está vendo isso, as notificações estão funcionando!',
+            id: 999,
+            schedule: { at: testTime, allowWhileIdle: true }
+          }
+        ]
+      });
+      alert("Notificação de teste agendada para daqui a 5 segundos.");
+    } catch (e) {
+      console.error("Erro no teste de notificação:", e);
+      alert("Erro ao enviar notificação de teste.");
+    }
+  } else {
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        setTimeout(() => {
+          new Notification('Teste de Notificação', {
+            body: 'As notificações web estão funcionando!',
+          });
+        }, 5000);
+        alert("Notificação de teste agendada para daqui a 5 segundos.");
+      } else {
+        const res = await Notification.requestPermission();
+        if (res === "granted") {
+          sendTestNotification();
+        } else {
+          alert("Permissão de notificação negada no navegador.");
+        }
+      }
     }
   }
 };

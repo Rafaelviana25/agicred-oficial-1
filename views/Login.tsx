@@ -428,7 +428,8 @@ Pelo menos um número (0 a 9)`;
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 pt-safe uppercase overflow-hidden relative font-bold text-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[60]" />
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       

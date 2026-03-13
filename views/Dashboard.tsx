@@ -78,6 +78,7 @@ const DatePickerPopup = ({ selectedDate, onDateSelect, onClose }: { selectedDate
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm" onClick={onClose}>
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[10000]" />
       <div className="bg-white rounded-2xl p-4 shadow-2xl border border-slate-200 w-[280px] animate-in fade-in zoom-in duration-200 uppercase font-black text-slate-900" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1))} className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"><ChevronLeft size={16}/></button>
@@ -394,7 +395,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col relative overflow-hidden h-full bg-slate-50 pt-safe">
+      <main className="flex-1 flex flex-col relative overflow-hidden h-full bg-slate-50">
+        <div className="h-[env(safe-area-inset-top)] primary-gradient w-full shrink-0" />
         <header className="px-6 lg:px-8 h-16 lg:h-20 flex items-center justify-between shrink-0 glass-panel border-b border-slate-200 z-40 relative">
           <div className="flex items-center gap-4">
             <AgicredLogo className="lg:hidden" textClassName="text-xl text-slate-900" />
@@ -1033,6 +1035,7 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[105] overflow-y-auto uppercase font-black text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-6 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center pb-4">
           <div className="flex items-center gap-3">
@@ -1170,7 +1173,10 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
 
   const monthlyInterestOnly = Number(contract.monthly_interest) || 0;
   const totalPaid = Number(contract.paid_amount || 0);
-  const installmentsPaidCount = monthlyInterestOnly > 0 ? Math.floor(totalPaid / (monthlyInterestOnly || 1)) : 0;
+  // Use integer math (cents) to avoid floating point errors
+  const installmentsPaidCount = monthlyInterestOnly > 0 
+    ? Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyInterestOnly * 100)) 
+    : 0;
   
   const totalRemainingDebt = Number(contract.total_amount) - totalPaid;
   const remainingInstallmentsCount = Math.max(0, Number(contract.months) - installmentsPaidCount);
@@ -1355,6 +1361,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[120]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-lg p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
         {showPartialPay && (
           <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-y-auto no-scrollbar pb-10 text-slate-900">
@@ -1679,6 +1686,7 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
   
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVO CLIENTE</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">SISTEMA AGICRED</p></div>
@@ -1772,6 +1780,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center px-1">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVA OPERAÇÃO</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">EMISSÃO DE TÍTULO</p></div>
@@ -1908,14 +1917,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   useEffect(() => {
     setLocalNotificationsEnabled(localStorage.getItem('local_notifications_enabled') === 'true');
+    rescheduleNotifications();
   }, []);
 
   const rescheduleNotifications = () => {
-    if (localStorage.getItem('local_notifications_enabled') === 'true') {
-      import('../services/localNotifications').then(({ scheduleContractNotifications }) => {
-        scheduleContractNotifications(contracts, clients);
-      });
-    }
+    console.log("Solicitando reagendamento de notificações...");
+    import('../services/localNotifications').then(({ scheduleContractNotifications }) => {
+      scheduleContractNotifications(contracts, clients);
+    });
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2355,6 +2364,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
+      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
@@ -2410,13 +2420,16 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
               const newState = !localNotificationsEnabled;
               setLocalNotificationsEnabled(newState);
               localStorage.setItem('local_notifications_enabled', newState.toString());
-              if (newState) {
-                import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
+              
+              import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
+                if (newState) {
                   setupLocalNotifications().then(() => {
                     scheduleContractNotifications(contracts, clients);
                   });
-                });
-              }
+                } else {
+                  scheduleContractNotifications(contracts, clients);
+                }
+              });
             } : () => setShowProMessage(true)} 
             className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${user.is_pro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
@@ -2475,96 +2488,16 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     <div className={`w-3 h-3 rounded-full bg-white transition-transform ${notifVib ? 'translate-x-4' : 'translate-x-0'}`} />
                   </button>
                 </div>
+
+                {Capacitor.isNativePlatform() && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                    <p className="text-[9px] font-bold text-amber-700 leading-relaxed uppercase">
+                      <Info size={10} className="inline mr-1 mb-0.5" />
+                      Dica: Para garantir que as notificações cheguem com o app fechado, desative a "Otimização de Bateria" para o Agicred nas configurações do seu celular.
+                    </p>
+                  </div>
+                )}
               </div>
-
-              <button 
-                type="button" 
-                onClick={async () => {
-                  try {
-                    const { LocalNotifications } = await import('@capacitor/local-notifications');
-                    const { Capacitor } = await import('@capacitor/core');
-                    
-                    // Helper to find overdue contracts
-                    const overdue = contracts.filter(c => {
-                      if (c.status === 'paid') return false;
-                      const monthlyValue = Number(c.monthly_interest) || 0;
-                      if (monthlyValue <= 0) return false;
-                      const totalPaid = Number(c.paid_amount || 0);
-                      const installmentsFullyPaid = Math.floor(totalPaid / monthlyValue);
-                      if (installmentsFullyPaid >= c.months) return false;
-                      
-                      const firstDueDate = new Date(c.end_date + 'T12:00:00');
-                      if (c.months > 1) firstDueDate.setMonth(firstDueDate.getMonth() - (c.months - 1));
-                      const dueDate = new Date(firstDueDate);
-                      dueDate.setMonth(dueDate.getMonth() + installmentsFullyPaid);
-                      
-                      const now = new Date();
-                      now.setHours(12, 0, 0, 0);
-                      return now.getTime() >= dueDate.getTime();
-                    });
-
-                    const testTitle = overdue.length > 0 ? 'Teste: Contratos Vencidos' : 'Notificação de Teste';
-                    const testBody = overdue.length > 0 
-                      ? `O sistema identificou ${overdue.length} contrato(s) vencido(s). As notificações automáticas estão configuradas para o horário escolhido.`
-                      : 'As notificações estão funcionando perfeitamente! (Nenhum contrato vencido no momento)';
-
-                    if (Capacitor.isNativePlatform()) {
-                      const permStatus = await LocalNotifications.checkPermissions();
-                      if (permStatus.display !== 'granted') {
-                        alert('Permissão de notificação negada. Ative nas configurações do seu celular.');
-                        return;
-                      }
-                      
-                      let channelId = 'default';
-                      if (Capacitor.getPlatform() === 'android') {
-                        channelId = `agicred_alerts_${notifSound ? 's' : 'ns'}_${notifVib ? 'v' : 'nv'}`;
-                        await LocalNotifications.createChannel({
-                          id: channelId,
-                          name: 'Alertas Agicred',
-                          description: 'Notificações de vencimento',
-                          importance: 5,
-                          vibration: notifVib,
-                          visibility: 1,
-                          sound: notifSound ? 'default' : undefined
-                        });
-                      }
-
-                      await LocalNotifications.schedule({
-                        notifications: [{
-                          title: testTitle,
-                          body: testBody,
-                          id: 99999,
-                          channelId: channelId,
-                          schedule: { 
-                            at: new Date(Date.now() + 5000),
-                            allowWhileIdle: true 
-                          },
-                          sound: notifSound ? 'default' : undefined
-                        }]
-                      });
-                      alert('Uma notificação de teste foi agendada e aparecerá em 5 segundos. Feche o app ou deixe em segundo plano para testar.');
-                    } else {
-                      if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification(testTitle, {
-                          body: testBody,
-                          icon: '/vite.svg'
-                        });
-                        alert('Notificação web de teste enviada!');
-                      } else {
-                        alert('Permissão de notificação web negada ou não suportada.');
-                      }
-                    }
-                  } catch (err: any) {
-                    alert(`Erro ao testar notificações: ${err.message}`);
-                  }
-                }} 
-                className="w-full py-3 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-center px-6 border bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100 active:scale-95 border-emerald-200"
-              >
-                <Bell size={14} className="mr-2"/> TESTAR NOTIFICAÇÃO NO MEU CELULAR
-              </button>
-              <p className="text-[8px] text-slate-400 text-center font-medium uppercase tracking-tighter mt-2">
-                AS NOTIFICAÇÕES LOCAIS AVISARÃO SOBRE CONTRATOS VENCIDOS E VENCIMENTOS DO DIA.
-              </p>
             </div>
           )}
 

@@ -23,8 +23,7 @@ const App: React.FC = () => {
     if (Capacitor.isNativePlatform()) {
       try {
         StatusBar.setStyle({ style: Style.Dark }); // Texto branco
-        StatusBar.setBackgroundColor({ color: '#7c3aed' }); // Fundo roxo
-        StatusBar.setOverlaysWebView({ overlay: false });
+        StatusBar.setOverlaysWebView({ overlay: true });
       } catch (err) {
         console.error('Erro ao configurar StatusBar:', err);
       }
@@ -32,19 +31,14 @@ const App: React.FC = () => {
 
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error("Session error:", error.message);
-        // If the refresh token is invalid, we just clear the session state
-        // The Supabase client usually clears its own state, but we can force it
-        supabase.auth.signOut().catch(() => {});
-        setSession(null);
-      } else {
-        setSession(session);
-        if (session) fetchProfile(session.user.id, session);
+        console.error("Session error:", error);
+        supabase.auth.signOut().catch(console.error);
       }
+      setSession(session);
+      if (session) fetchProfile(session.user.id, session);
       setLoading(false);
     }).catch(err => {
       console.error("Session catch error:", err);
-      setSession(null);
       setLoading(false);
     });
 
