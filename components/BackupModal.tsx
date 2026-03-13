@@ -172,7 +172,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, userId }) => 
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[110] animate-in fade-in">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-[110] animate-in fade-in pt-safe-native">
       <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[120]" />
       <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200">
         <div className="flex justify-between items-center mb-6">

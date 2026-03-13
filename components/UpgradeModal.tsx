@@ -27,10 +27,10 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   const [expiresIn, setExpiresIn] = useState<number>(1800);
 
   const plans = [
-    { id: 'mensal', label: 'MENSAL', amount: 19.90, period: '/MÊS', description: 'ACESSO RÁPIDO E FLEXÍVEL.' },
-    { id: 'quarterly', label: 'TRIMESTRAL', amount: 39.90, period: '/TRIMESTRE', description: 'PARA QUEM ESTÁ COMEÇANDO.' },
-    { id: 'semiannual', label: 'SEMESTRAL', amount: 69.90, period: '/SEMESTRE', description: 'EQUILÍBRIO E ECONOMIA.' },
-    { id: 'annual', label: 'ANUAL', amount: 109.90, period: '/ANO', description: 'O MELHOR VALOR TOTAL!', bestValue: true },
+    { id: 'mensal', label: '1 MÊS', amount: 25.00, period: '/MÊS', description: 'ACESSO RÁPIDO E FLEXÍVEL.' },
+    { id: 'quarterly', label: '3 MESES', amount: 66.00, period: '/TRIMESTRE', description: 'PARA QUEM ESTÁ COMEÇANDO.' },
+    { id: 'semiannual', label: '6 MESES', amount: 108.00, period: '/SEMESTRE', description: 'EQUILÍBRIO E ECONOMIA.' },
+    { id: 'annual', label: '12 MESES', amount: 156.00, period: '/ANO', description: 'O MELHOR VALOR TOTAL!', bestValue: true },
   ];
 
   useEffect(() => {
@@ -180,9 +180,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   }, [step, isPaid, expiresIn]);
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-10 z-50 uppercase overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-10 z-50 uppercase overflow-y-auto pt-safe-native">
       <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[60]" />
-      <div className="glass-panel rounded-b-[3rem] lg:rounded-3xl max-w-2xl w-full p-6 lg:p-8 shadow-2xl relative overflow-hidden animate-in slide-in-from-top-10 duration-300 border border-slate-200 bg-white mb-10">
+      <div className="glass-panel rounded-[3rem] lg:rounded-3xl max-w-3xl w-full p-6 lg:p-8 shadow-2xl relative overflow-hidden animate-in slide-in-from-top-10 duration-300 border border-slate-200 bg-white mb-10">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20">✕</button>
         
         {isPaid ? (
@@ -203,44 +203,51 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               <p className="text-slate-500 font-bold mt-1 text-[9px] md:text-[10px] tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
+            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
               {plans.map((plan) => (
                 <div 
                   key={plan.id}
                   onClick={() => handleSelectPlan(plan)}
-                  className="relative p-4 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col border-slate-200 bg-slate-50/50 hover:border-violet-300 hover:bg-white hover:shadow-xl hover:scale-[1.02] group"
+                  className="relative p-3 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col border-slate-200 bg-slate-50/50 hover:border-violet-300 hover:bg-white hover:shadow-xl hover:scale-[1.02] group"
                 >
                   {plan.bestValue && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap z-10">
                       MELHOR ESCOLHA
                     </span>
                   )}
 
-                  <div className="mb-3 text-center">
-                    <h3 className="text-xs font-black text-slate-900 tracking-widest">{plan.label}</h3>
-                    <p className="mt-1 text-[9px] text-slate-500 font-bold">{plan.description}</p>
+                  <div className="mb-2 text-center">
+                    <h3 className="text-[10px] font-black text-slate-900 tracking-widest">{plan.label}</h3>
                   </div>
 
-                  <div className="mb-3 text-center">
+                  <div className="mb-2 text-center">
                     <div className="flex items-baseline justify-center">
-                      <span className="text-xl font-black text-slate-900">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
-                      <span className="ml-1 text-[9px] text-slate-500 font-bold">{plan.period}</span>
+                      <span className="text-sm font-black text-slate-900">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
                     </div>
                   </div>
 
-                  <ul className="space-y-1.5 mb-4 flex-grow">
-                    <li className="flex items-center text-[9px] font-bold text-slate-600">
-                      <Check className="w-3 h-3 text-emerald-500 mr-1.5 flex-shrink-0" /> ACESSO ILIMITADO
+                  <ul className="space-y-1 mb-3 flex-grow border-t border-slate-100 pt-2">
+                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO ILIMITADO
                     </li>
-                    <li className="flex items-center text-[9px] font-bold text-slate-600">
-                      <Check className="w-3 h-3 text-emerald-500 mr-1.5 flex-shrink-0" /> SUPORTE 24/7
+                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> NOTIFICAÇÕES
+                    </li>
+                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> BACKUP
+                    </li>
+                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> RELATORIOS
+                    </li>
+                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO AO COMPUTADOR WEB
                     </li>
                   </ul>
 
                   <button 
-                    className="w-full py-2.5 px-4 rounded-xl text-[9px] font-black tracking-widest uppercase transition-all bg-slate-200 text-slate-600 group-hover:bg-violet-600 group-hover:text-white"
+                    className="w-full py-2 px-2 rounded-xl text-[8px] font-black tracking-widest uppercase transition-all bg-slate-200 text-slate-600 group-hover:bg-violet-600 group-hover:text-white"
                   >
-                    ASSINAR {plan.label}
+                    ASSINAR
                   </button>
                 </div>
               ))}
@@ -263,7 +270,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               </div>
             </div>
 
-            <button onClick={onClose} className="w-full text-slate-400 text-[9px] font-black tracking-widest hover:text-slate-600 transition-colors mt-2">
+            <button onClick={onClose} className="w-full bg-emerald-500 text-white py-4 rounded-2xl text-[10px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-6 shadow-lg shadow-emerald-500/20">
               CONTINUAR COM CONTA GRÁTIS (LIMITADA)
             </button>
           </div>

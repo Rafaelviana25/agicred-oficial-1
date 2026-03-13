@@ -61,7 +61,12 @@
             padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
         }
         .pt-safe {
-            padding-top: env(safe-area-inset-top);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+        }
+        @media (max-width: 1024px) {
+            .pt-safe-native {
+                padding-top: calc(env(safe-area-inset-top, 0px) + 15px);
+            }
         }
         .no-scrollbar::-webkit-scrollbar {
             display: none;
