@@ -28,9 +28,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
 
   const plans = [
     { id: 'mensal', label: '1 MÊS', amount: 25.00, period: '/MÊS', description: 'ACESSO RÁPIDO E FLEXÍVEL.' },
-    { id: 'quarterly', label: '3 MESES', amount: 66.00, period: '/TRIMESTRE', description: 'PARA QUEM ESTÁ COMEÇANDO.' },
-    { id: 'semiannual', label: '6 MESES', amount: 108.00, period: '/SEMESTRE', description: 'EQUILÍBRIO E ECONOMIA.' },
-    { id: 'annual', label: '12 MESES', amount: 156.00, period: '/ANO', description: 'O MELHOR VALOR TOTAL!', bestValue: true },
+    { id: 'quarterly', label: '3 MESES', amount: 66.00, period: '/TRIMESTRE', description: 'PARA QUEM ESTÁ COMEÇANDO.', monthlyAmount: 22.00 },
+    { id: 'semiannual', label: '6 MESES', amount: 108.00, period: '/SEMESTRE', description: 'EQUILÍBRIO E ECONOMIA.', monthlyAmount: 18.00 },
+    { id: 'annual', label: '12 MESES', amount: 156.00, period: '/ANO', description: 'O MELHOR VALOR TOTAL!', bestValue: true, monthlyAmount: 13.00 },
   ];
 
   useEffect(() => {
@@ -181,7 +181,6 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-10 z-50 uppercase overflow-y-auto pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[60]" />
       <div className="glass-panel rounded-[3rem] lg:rounded-3xl max-w-3xl w-full p-6 lg:p-8 shadow-2xl relative overflow-hidden animate-in slide-in-from-top-10 duration-300 border border-slate-200 bg-white mb-10">
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20">✕</button>
         
@@ -198,7 +197,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
           </div>
         ) : step === 'plans' ? (
           <div className="space-y-6">
-            <div className="text-center">
+            <div className="text-center pt-4">
               <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
               <p className="text-slate-500 font-bold mt-1 text-[9px] md:text-[10px] tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
             </div>
@@ -208,7 +207,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                 <div 
                   key={plan.id}
                   onClick={() => handleSelectPlan(plan)}
-                  className="relative p-3 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col border-slate-200 bg-slate-50/50 hover:border-violet-300 hover:bg-white hover:shadow-xl hover:scale-[1.02] group"
+                  className="relative p-3 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col border-[#661c9e] bg-slate-50/50 hover:border-violet-400 hover:bg-white hover:shadow-xl hover:scale-[1.02] group"
                 >
                   {plan.bestValue && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap z-10">
@@ -221,8 +220,11 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                   </div>
 
                   <div className="mb-2 text-center">
-                    <div className="flex items-baseline justify-center">
-                      <span className="text-sm font-black text-slate-900">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
+                    <div className="flex flex-col items-center justify-center">
+                      <span className="text-sm font-black text-slate-900 -mt-[11px]">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
+                      {plan.monthlyAmount && (
+                        <span className="text-[8px] text-slate-500 font-bold mt-0.5">(R$ {plan.monthlyAmount.toFixed(2).replace('.', ',')}/mês)</span>
+                      )}
                     </div>
                   </div>
 
@@ -261,12 +263,6 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               <div className="flex items-center gap-1.5 text-slate-400 text-[9px] font-bold uppercase tracking-widest">
                 <ShieldCheck className="w-3 h-3" />
                 AMBIENTE SEGURO E CRIPTOGRAFADO
-              </div>
-              <div className="flex items-center gap-1.5 text-slate-500 mt-1">
-                <Mail className="w-3 h-3" />
-                <span className="text-[9px] font-black uppercase tracking-widest">
-                  SUPORTE: <span className="lowercase font-bold text-slate-400">agicred.gestaodecredito@gmail.com</span>
-                </span>
               </div>
             </div>
 

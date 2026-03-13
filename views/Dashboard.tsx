@@ -49,7 +49,8 @@ import {
   Volume2,
   VolumeX,
   Smartphone,
-  Search
+  Search,
+  Mail
 } from 'lucide-react';
 
 import { AgicredLogo } from '../components/AgicredLogo';
@@ -79,7 +80,6 @@ const DatePickerPopup = ({ selectedDate, onDateSelect, onClose }: { selectedDate
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm pt-safe-native" onClick={onClose}>
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[10000]" />
       <div className="bg-white rounded-2xl p-4 shadow-2xl border border-slate-200 w-[280px] animate-in fade-in zoom-in duration-200 uppercase font-black text-slate-900" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1))} className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"><ChevronLeft size={16}/></button>
@@ -335,7 +335,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
   const canAddClient = isPro || clients.length < clientLimit;
 
   return (
-    <div className="flex h-screen overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900 pt-safe-native lg:pt-0">
+    <div className="flex h-screen overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
       {showOverdueNotification && (
         <OverdueNotification 
           count={overdueContracts.length} 
@@ -1071,7 +1071,6 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[105] overflow-y-auto uppercase font-black text-slate-900 pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-6 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center pb-4">
           <div className="flex items-center gap-3">
@@ -1397,7 +1396,6 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900 pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[120]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-lg p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
         {showPartialPay && (
           <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-y-auto no-scrollbar pb-10 text-slate-900">
@@ -1722,7 +1720,6 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
   
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVO CLIENTE</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">SISTEMA AGICRED</p></div>
@@ -1816,7 +1813,6 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center px-1">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVA OPERAÇÃO</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">EMISSÃO DE TÍTULO</p></div>
@@ -2400,7 +2396,6 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
-      <div className="fixed top-0 left-0 right-0 h-[env(safe-area-inset-top)] primary-gradient z-[110]" />
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
@@ -2429,10 +2424,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
         <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
            <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">E-MAIL</span><span className="text-[10px] font-black text-slate-900 lowercase">{user.email}</span></div>
            <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">CPF</span><span className="text-[10px] font-black text-slate-900 uppercase">{user.cpf}</span></div>
-           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[10px] font-black text-slate-900 uppercase">{user.phone}</span></div>
-           {user.is_pro && (
-             <div className="flex justify-between py-1"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">SISTEMA WEB</span><a href="https://agicred-9wto.onrender.com" target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-violet-600 lowercase hover:underline">agicred-9wto.onrender.com</a></div>
-           )}
+           <div className="flex justify-between py-1"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[10px] font-black text-slate-900 uppercase">{user.phone}</span></div>
         </div>
         {!user.is_pro && <button type="button" onClick={onUpgradeRequest} className="w-full primary-gradient text-white py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:shadow-violet-500/25 transition-all flex items-center justify-center gap-2 active:scale-95"><Crown size={18}/> ATIVAR PRO</button>}
         <div className="space-y-2">
@@ -2543,6 +2535,12 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           {showProMessage && !user.is_pro && (
             <p className="text-[8px] text-rose-500 font-black tracking-widest uppercase text-center animate-in fade-in slide-in-from-top-1">ESSA FUNÇÃO É PARA VERSÃO PRO</p>
           )}
+        </div>
+        <div className="flex items-center justify-center gap-1.5 text-slate-500 mt-4 mb-2">
+          <Mail className="w-3 h-3" />
+          <span className="text-[9px] font-black uppercase tracking-widest">
+            SUPORTE: <span className="lowercase font-bold text-slate-400">agicred.gestaodecredito@gmail.com</span>
+          </span>
         </div>
         <button type="button" onClick={handleLogout} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><LogOut size={16}/> SAIR DA CONTA</button>
       </div>

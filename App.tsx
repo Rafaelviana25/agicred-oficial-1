@@ -23,7 +23,8 @@ const App: React.FC = () => {
     if (Capacitor.isNativePlatform()) {
       try {
         StatusBar.setStyle({ style: Style.Dark }); // Texto branco
-        StatusBar.setOverlaysWebView({ overlay: true });
+        StatusBar.setOverlaysWebView({ overlay: false });
+        StatusBar.setBackgroundColor({ color: '#7C3AED' });
       } catch (err) {
         console.error('Erro ao configurar StatusBar:', err);
       }
