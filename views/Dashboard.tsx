@@ -331,7 +331,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
     return `${days} DIA${days !== 1 ? 'S' : ''}`;
   };
 
-  const clientLimit = 3;
+  const clientLimit = isPro ? 999999 : 3;
   const canAddClient = isPro || clients.length < clientLimit;
 
   return (
@@ -358,11 +358,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           <SidebarItem icon={<LayoutDashboard size={20} />} label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
           <SidebarItem icon={<Users size={20} />} label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} />
           <SidebarItem icon={<Plus size={20} />} label="NOVA OPERAÇÃO" active={false} onClick={() => {
-             if (isPro) {
-               handleOpenContractModal();
-             } else {
-               setShowUpgrade(true);
-             }
+             handleOpenContractModal();
           }} />
           <SidebarItem icon={<AlertCircle size={20} />} label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} />
           <SidebarItem icon={<FileText size={20} />} label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} />
@@ -447,7 +443,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
               <div className="max-w-7xl mx-auto px-3 lg:px-8 pt-6 space-y-6">
                 {activeTab === 'clients' && (
                   <>
-                    {!isPro && clients.length >= clientLimit && (
+                    {!canAddClient && (
                       <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-3xl p-8 lg:p-10 shadow-lg text-white relative overflow-hidden mb-6">
                         <div className="absolute top-0 right-0 opacity-10 transform translate-x-4 -translate-y-4">
                           <Crown size={160} />
@@ -1127,9 +1123,11 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
               <div className="bg-slate-50 rounded-2xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
                 {contracts.length > 0 ? contracts.map(c => (
                   <div key={c.id} onClick={() => onSelectContract(c)} className="p-3.5 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group">
-                    <div>
-                      <p className="text-[11px] font-black text-slate-900 uppercase">R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                      <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">CRIADO: {new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
+                    <div className="space-y-1">
+                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest">CAPITAL: R$ {c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest">JUROS: R$ {c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest">TOTAL DO CONTRATO: R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">DATA DE CRIAÇÃO: {new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest ${c.status === 'active' ? 'bg-emerald-100 text-emerald-600' : c.status === 'overdue' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'}`}>
                       {c.status === 'active' ? 'ATIVO' : c.status === 'paid' ? 'LIQUIDADO' : c.status.toUpperCase()}
@@ -1771,8 +1769,8 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
   const months = Number(form.months) || 0;
 
   if (form.interest_amount) {
-    total_int = Number(form.interest_amount) || 0;
-    m_int = months > 0 ? total_int / months : total_int;
+    m_int = Number(form.interest_amount) || 0;
+    total_int = m_int * months;
   } else {
     m_int = capital * ((Number(form.interest_rate) || 0) / 100);
     total_int = m_int * months;
@@ -1837,6 +1835,11 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
               </div>
               <div className="col-span-4">
                  <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" />
+                 {form.interest_amount && (
+                   <p className="text-[10px] text-violet-600 font-black uppercase tracking-widest leading-[12px] h-[21px] mt-[3px] -mb-[23px] pb-0 pt-0 pl-[28px]">
+                     ({(capital > 0 ? (Number(form.interest_amount) / capital) * 100 : 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%)
+                   </p>
+                 )}
               </div>
               <div className="col-span-3">
                  <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" />
@@ -1850,7 +1853,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
                 <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE INÍCIO</label>
                 <div onClick={() => { setShowDatePicker(!showDatePicker); setShowDueDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[11px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
-                  <CalendarIcon size={14} className="text-violet-600" />
+                  <CalendarIcon size={14} className="text-violet-600 ml-[9px] mr-[-12px]" />
                 </div>
                 {showDatePicker && <DatePickerPopup selectedDate={form.start_date} onDateSelect={(d) => setForm({...form, start_date: d})} onClose={() => setShowDatePicker(false)} />}
               </div>
@@ -1858,7 +1861,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
                 <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE VENCIMENTO</label>
                 <div onClick={() => { setShowDueDatePicker(!showDueDatePicker); setShowDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[11px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}
-                  <CalendarIcon size={14} className="text-violet-600" />
+                  <CalendarIcon size={14} className="text-violet-600 ml-[9px] mr-[-12px]" />
                 </div>
                 {showDueDatePicker && <DatePickerPopup selectedDate={form.due_date} onDateSelect={(d) => setForm({...form, due_date: d})} onClose={() => setShowDueDatePicker(false)} />}
               </div>
@@ -1979,6 +1982,8 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     localStorage.setItem('notif_vib', val.toString());
     rescheduleNotifications();
   };
+
+  const isPro = user.is_pro && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
 
   const generateReport = async () => {
     if (!user.is_pro) {
@@ -2430,8 +2435,8 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
         <div className="space-y-2">
           <button 
             type="button" 
-            onClick={user.is_pro ? onBackupRequest : () => setShowProMessage(true)} 
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${user.is_pro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            onClick={isPro ? onBackupRequest : () => setShowProMessage(true)} 
+            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             <Database size={16}/> BACKUP DE DADOS
           </button>
@@ -2440,14 +2445,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             type="button" 
             onClick={generateReport} 
             disabled={generatingReport}
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${user.is_pro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
           <button 
             type="button" 
-            onClick={user.is_pro ? async () => {
+            onClick={isPro ? async () => {
               const newState = !localNotificationsEnabled;
               setLocalNotificationsEnabled(newState);
               localStorage.setItem('local_notifications_enabled', newState.toString());
@@ -2462,17 +2467,17 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 }
               });
             } : () => setShowProMessage(true)} 
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${user.is_pro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
             </div>
-            <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${user.is_pro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}>
-              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${user.is_pro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+            <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}>
+              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isPro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
             </div>
           </button>
 
-          {user.is_pro && localNotificationsEnabled && (
+          {isPro && localNotificationsEnabled && (
             <div className="flex flex-col gap-2 mt-2">
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
                 <div className="flex items-center justify-between">

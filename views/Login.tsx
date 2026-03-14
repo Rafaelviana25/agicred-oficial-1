@@ -58,18 +58,7 @@ const Login: React.FC<LoginProps> = ({ onSwitch, onRecoveryMode }) => {
     }
 
     if (authData.user) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_pro')
-        .eq('id', authData.user.id)
-        .single();
-
-      if (profileError || !profile?.is_pro) {
-        await supabase.auth.signOut();
-        setError("ACESSO NEGADO - ASSINE O PRO PARA TER ACESSO");
-        setLoading(false);
-        return;
-      }
+      // Perfil será carregado no App.tsx via fetchProfile
     }
 
     setLoading(false);
