@@ -108,18 +108,22 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       if (isOverdue) {
         // For overdue contracts, schedule a REPEATING notification so it reminds every day
         // until the user opens the app and it gets rescheduled (or contract is paid)
+        let exactTime = new Date(todayNotifTime.getTime());
+        if (exactTime.getTime() <= baseDate.getTime()) {
+          exactTime.setDate(exactTime.getDate() + 1);
+        }
         notificationsToSchedule.push({
           title: 'Contrato Vencido!',
           body: `O contrato de ${clientName} está vencido.`,
           id: 1000 + idCounter++,
           channelId: channelId,
           schedule: { 
-            on: { hour: hours, minute: minutes },
-            repeats: true,
+            at: exactTime,
+            every: 'day',
             allowWhileIdle: true
           },
           sound: hasSound ? 'default' : undefined,
-          isOverdue: true
+          extra: { isOverdue: true }
         });
       } else if (todayNotifTime.getTime() > baseDate.getTime()) {
         // Due today and time is in the future
@@ -135,23 +139,24 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
             allowWhileIdle: true
           },
           sound: hasSound ? 'default' : undefined,
-          isOverdue: false
+          extra: { isOverdue: false }
         });
       } else {
         // Due today but time already passed, schedule for tomorrow as "Overdue"
-        // We use 'on' with repeats: true so it keeps notifying until paid
+        let exactTime = new Date(todayNotifTime.getTime());
+        exactTime.setDate(exactTime.getDate() + 1);
         notificationsToSchedule.push({
           title: 'Contrato Vencido!',
           body: `O contrato de ${clientName} está vencido.`,
           id: 1000 + idCounter++,
           channelId: channelId,
           schedule: { 
-            on: { hour: hours, minute: minutes },
-            repeats: true,
+            at: exactTime,
+            every: 'day',
             allowWhileIdle: true
           },
           sound: hasSound ? 'default' : undefined,
-          isOverdue: true
+          extra: { isOverdue: true }
         });
       }
     } else {

@@ -211,7 +211,7 @@ Pelo menos um número (0 a 9)`;
 
   if (mode === 'forgot') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
+      <div className="h-full flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
         <div className="w-[90%] max-w-sm glass-panel rounded-3xl p-6 lg:p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
             <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
@@ -343,7 +343,7 @@ Pelo menos um número (0 a 9)`;
 
   if (mode === 'change') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
+      <div className="h-full flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
         <div className="w-[90%] max-w-sm glass-panel rounded-3xl p-6 lg:p-8 space-y-6 relative z-10">
           <div className="text-center space-y-1">
             <AgicredLogo className="mx-auto scale-90 lg:scale-100" />
@@ -435,7 +435,7 @@ Pelo menos um número (0 a 9)`;
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900 pt-safe-native">
+    <div className="h-full flex flex-col items-center justify-center p-4 uppercase overflow-hidden relative font-bold text-slate-900">
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 opacity-[0.05] blur-[120px] rounded-full"></div>
       

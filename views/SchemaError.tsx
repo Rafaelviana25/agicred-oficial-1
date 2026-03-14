@@ -40,7 +40,7 @@ NOTIFY pgrst, 'reload schema';`;
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4 lg:p-8 uppercase font-bold text-slate-900">
+    <div className="h-full bg-[#F8FAFC] flex items-center justify-center p-4 lg:p-8 uppercase font-bold text-slate-900">
       <div className="max-w-2xl w-full glass-panel rounded-[2.5rem] shadow-2xl p-8 lg:p-12 border border-slate-200 space-y-8 animate-in zoom-in duration-300">
         <div className="flex items-center gap-5">
           <div className="bg-emerald-50 text-emerald-600 p-5 rounded-3xl shrink-0 shadow-inner border border-emerald-200">

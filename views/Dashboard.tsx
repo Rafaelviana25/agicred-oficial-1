@@ -50,7 +50,8 @@ import {
   VolumeX,
   Smartphone,
   Search,
-  Mail
+  Mail,
+  Settings
 } from 'lucide-react';
 
 import { AgicredLogo } from '../components/AgicredLogo';
@@ -79,7 +80,7 @@ const DatePickerPopup = ({ selectedDate, onDateSelect, onClose }: { selectedDate
   for (let i = 1; i <= daysInMonth; i++) days.push(i);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm pt-safe-native" onClick={onClose}>
+    <div className="fixed modal-safe z-[9999] flex items-center justify-center bg-slate-900/20 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl p-4 shadow-2xl border border-slate-200 w-[280px] animate-in fade-in zoom-in duration-200 uppercase font-black text-slate-900" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1))} className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-900 transition-colors"><ChevronLeft size={16}/></button>
@@ -146,7 +147,7 @@ const OverdueNotification = ({ count, onClick, onClose }: { count: number, onCli
   };
 
   return (
-    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm transition-all duration-500 ease-in-out ${isLeaving ? '-translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-top-10 fade-in'}`}>
+    <div className={`fixed toast-safe left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm transition-all duration-500 ease-in-out ${isLeaving ? '-translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-top-10 fade-in'}`}>
       <div className="bg-rose-600 text-white p-4 rounded-2xl shadow-2xl flex items-start gap-3 border border-rose-500 relative overflow-hidden cursor-pointer" onClick={handleClick}>
         <div className="bg-white/20 p-2 rounded-full shrink-0 z-10">
           <AlertCircle size={24} className="text-white" />
@@ -335,7 +336,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
   const canAddClient = isPro || clients.length < clientLimit;
 
   return (
-    <div className="flex h-screen overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
+    <div className="flex h-full overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
       {showOverdueNotification && (
         <OverdueNotification 
           count={overdueContracts.length} 
@@ -1066,7 +1067,7 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[105] overflow-y-auto uppercase font-black text-slate-900 pt-safe-native">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[105] overflow-y-auto uppercase font-black text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-6 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center pb-4">
           <div className="flex items-center gap-3">
@@ -1124,10 +1125,10 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
                 {contracts.length > 0 ? contracts.map(c => (
                   <div key={c.id} onClick={() => onSelectContract(c)} className="p-3.5 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group">
                     <div className="space-y-1">
-                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest">CAPITAL: R$ {c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest">JUROS: R$ {c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                      <p className="text-[10px] text-slate-900 font-black uppercase tracking-widest">TOTAL DO CONTRATO: R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                      <p className="text-[8px] text-slate-400 font-black uppercase tracking-widest">DATA DE CRIAÇÃO: {new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest -mt-0.5 pb-[1px]">CAPITAL: R$ {c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest pb-[1px]">JUROS: R$ {c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] text-[#6608ff] font-black uppercase tracking-widest">TOTAL DO CONTRATO: R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">DATA DE CRIAÇÃO: {new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                     <div className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest ${c.status === 'active' ? 'bg-emerald-100 text-emerald-600' : c.status === 'overdue' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'}`}>
                       {c.status === 'active' ? 'ATIVO' : c.status === 'paid' ? 'LIQUIDADO' : c.status.toUpperCase()}
@@ -1393,7 +1394,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900 pt-safe-native">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-lg p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
         {showPartialPay && (
           <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-y-auto no-scrollbar pb-10 text-slate-900">
@@ -1412,16 +1413,16 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                    </div>
                    <div className="grid grid-cols-1 gap-2">
                       <div className="flex justify-between items-center px-2 py-1.5">
-                         <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES ({remainingInstallmentsCount} PARC.)</span>
-                         <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {remainingInterestTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                         <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES ({remainingInstallmentsCount} PARC.)</span>
+                         <span className="text-[12px] font-black text-rose-600 tracking-tighter">R$ {remainingInterestTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between items-center px-2 py-1.5">
-                         <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">CAPITAL VIGENTE (PRINCIPAL)</span>
-                         <span className="text-[11px] font-black text-slate-900 tracking-tighter">R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div className="flex justify-between items-center px-[20px] pt-[10px] pb-[6px] mt-[9px] ml-[-2px] mr-0">
+                         <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">CAPITAL VIGENTE (PRINCIPAL)</span>
+                         <span className="text-[12px] font-black text-slate-900 tracking-tighter leading-[14px]">R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-blue-100 px-4 py-3.5 rounded-xl border border-blue-200 mt-1">
-                         <span className="text-[10px] text-blue-600 font-black uppercase tracking-widest">DÍVIDA ATUAL (SOMA TOTAL)</span>
-                         <span className="text-[14px] font-black text-blue-700 tracking-tighter leading-none">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div className="flex justify-between items-center bg-blue-100 rounded-xl border border-blue-200 text-[16px] mt-[-2px] ml-[59px] pl-[19px] pb-[15px] pr-[22px] pt-[8px]">
+                         <span className="text-[11px] text-blue-600 font-black uppercase tracking-widest">DÍVIDA ATUAL (SOMA TOTAL)</span>
+                         <span className="text-[12px] font-black text-blue-700 tracking-tighter leading-none">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
                    </div>
                 </div>
@@ -1537,7 +1538,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           <>
             <div className="glass-panel p-5 rounded-2xl border border-slate-700 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group bg-slate-800">
                <div className="absolute top-0 right-0 p-2 opacity-5 text-white"><Coins size={40}/></div>
-               <p className="text-[7px] text-slate-400 font-black uppercase tracking-[0.3em] mb-1">MONTANTE TOTAL DO CONTRATO</p>
+               <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] mb-1">MONTANTE TOTAL DO CONTRATO</p>
                <div className="flex items-baseline gap-1.5">
                   <span className="text-emerald-400 text-xs font-black">R$</span>
                   <span className="text-2xl font-black text-white tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -1717,7 +1718,7 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
   };
   
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVO CLIENTE</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">SISTEMA AGICRED</p></div>
@@ -1810,7 +1811,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center px-1">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVA OPERAÇÃO</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">EMISSÃO DE TÍTULO</p></div>
@@ -1944,6 +1945,7 @@ const InfoItem = ({ icon, label, value }: any) => (
 const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest, onBackupRequest, onRefresh }: { user: UserProfile, contracts: Contract[], clients: Client[], onClose: () => void, onUpgradeRequest: () => void, onBackupRequest: () => void, onRefresh: () => void }) => {
   const [showProMessage, setShowProMessage] = useState(false);
   const [localNotificationsEnabled, setLocalNotificationsEnabled] = useState(localStorage.getItem('local_notifications_enabled') === 'true');
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [notifTime, setNotifTime] = useState(localStorage.getItem('notif_time') || '09:00');
   const [notifSound, setNotifSound] = useState(localStorage.getItem('notif_sound') !== 'false');
   const [notifVib, setNotifVib] = useState(localStorage.getItem('notif_vib') !== 'false');
@@ -2400,7 +2402,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const remainingTime = getRemainingProTime();
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900 pt-safe-native">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
@@ -2450,40 +2452,50 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <button 
-            type="button" 
-            onClick={isPro ? async () => {
-              const newState = !localNotificationsEnabled;
-              setLocalNotificationsEnabled(newState);
-              localStorage.setItem('local_notifications_enabled', newState.toString());
-              
-              import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
-                if (newState) {
-                  setupLocalNotifications().then(() => {
-                    scheduleContractNotifications(contracts, clients);
-                  });
-                } else {
-                  scheduleContractNotifications(contracts, clients);
-                }
-              });
-            } : () => setShowProMessage(true)} 
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
-          >
+          <div className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
+              {isPro && localNotificationsEnabled && (
+                <button 
+                  type="button" 
+                  onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
+                  className="p-1 hover:bg-slate-200 rounded-full transition-colors ml-2 text-slate-500 hover:text-slate-800"
+                >
+                  <Settings size={22} />
+                </button>
+              )}
             </div>
-            <div className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}>
+            <button 
+              type="button"
+              onClick={isPro ? async (e) => {
+                e.stopPropagation();
+                const newState = !localNotificationsEnabled;
+                setLocalNotificationsEnabled(newState);
+                localStorage.setItem('local_notifications_enabled', newState.toString());
+                
+                import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
+                  if (newState) {
+                    setupLocalNotifications().then(() => {
+                      scheduleContractNotifications(contracts, clients);
+                    });
+                  } else {
+                    scheduleContractNotifications(contracts, clients);
+                  }
+                });
+              } : () => setShowProMessage(true)}
+              className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}
+            >
               <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isPro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-            </div>
-          </button>
+            </button>
+          </div>
 
-          {isPro && localNotificationsEnabled && (
+          {isPro && localNotificationsEnabled && showNotificationSettings && (
             <div className="flex flex-col gap-2 mt-2">
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-4 mt-0 ml-[24px] pt-[10px] pl-[16px] pr-[18px] pb-0 w-[263px] h-[227.594px]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-700">
                     <Clock size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Horário do Aviso</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Horário do Aviso</span>
                   </div>
                   <input 
                     type="time" 
@@ -2498,7 +2510,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-700">
                     {notifSound ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                    <span className="text-[10px] font-black uppercase tracking-widest">Som da Notificação</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Som da Notificação</span>
                   </div>
                   <button 
                     type="button"
@@ -2514,7 +2526,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-slate-700">
                     <Smartphone size={16} className={notifVib ? 'animate-pulse' : ''} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Vibração</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest">Vibração</span>
                   </div>
                   <button 
                     type="button"
@@ -2533,6 +2545,13 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     </p>
                   </div>
                 )}
+                <button 
+                  type="button" 
+                  onClick={() => setShowNotificationSettings(false)}
+                  className="w-full mt-2 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.3em] bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors"
+                >
+                  OK
+                </button>
               </div>
             </div>
           )}

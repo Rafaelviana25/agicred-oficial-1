@@ -44,7 +44,7 @@ const CompleteProfile: React.FC<CompleteProfileProps> = ({ session, onSuccess })
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-4 lg:p-6 uppercase relative overflow-hidden font-bold">
+    <div className="h-full flex items-center justify-center bg-[#F8FAFC] p-4 lg:p-6 uppercase relative overflow-hidden font-bold">
       <div className="absolute top-[10%] right-[-5%] w-[30%] h-[30%] bg-emerald-500 opacity-[0.05] blur-[120px] rounded-full"></div>
       
       <div className="max-w-md w-full glass-panel rounded-3xl border border-slate-200 p-8 lg:p-10 space-y-8 animate-in fade-in duration-700 shadow-2xl relative z-10">
