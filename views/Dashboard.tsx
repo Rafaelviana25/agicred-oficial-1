@@ -2409,11 +2409,11 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight">{user.full_name}</h2>
             {user.is_pro ? (
               <div className="flex flex-col">
-                <p className="text-violet-600 text-[9px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
-                  VERSÃO PRO <Crown size={10} className="fill-violet-600" />
+                <p className="text-violet-600 text-[11px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
+                  VERSÃO PRO <Crown size={12} className="fill-violet-600" />
                 </p>
                 {user.pro_expires_at && (
-                  <div className="text-[8px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
+                  <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
                     <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
