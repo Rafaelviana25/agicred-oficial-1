@@ -62,7 +62,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
         id: channelId,
         name: 'Alertas Agicred',
         description: 'Notificações de vencimento',
-        importance: 5,
+        importance: hasSound ? 5 : 2, // 5 = High (sound), 2 = Low (no sound)
         vibration: hasVib,
         visibility: 1,
         sound: hasSound ? 'default' : undefined
@@ -89,7 +89,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           at: oneDayBefore,
           allowWhileIdle: true
         },
-        sound: hasSound ? 'default' : undefined,
+        ...(hasSound ? { sound: 'default' } : {}),
       });
     }
   }
@@ -144,7 +144,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
             every: 'day',
             allowWhileIdle: true
           },
-          sound: hasSound ? 'default' : undefined,
+          ...(hasSound ? { sound: 'default' } : {}),
           extra: { isOverdue: true }
         });
       } else if (todayNotifTime.getTime() > baseDate.getTime()) {
@@ -160,7 +160,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
             at: exactTime,
             allowWhileIdle: true
           },
-          sound: hasSound ? 'default' : undefined,
+          ...(hasSound ? { sound: 'default' } : {}),
           extra: { isOverdue: false }
         });
       } else {
@@ -177,7 +177,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
             every: 'day',
             allowWhileIdle: true
           },
-          sound: hasSound ? 'default' : undefined,
+          ...(hasSound ? { sound: 'default' } : {}),
           extra: { isOverdue: true }
         });
       }
@@ -202,7 +202,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
             at: exactTime,
             allowWhileIdle: true
           },
-          sound: hasSound ? 'default' : undefined,
+          ...(hasSound ? { sound: 'default' } : {}),
         });
       }
     }

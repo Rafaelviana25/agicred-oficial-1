@@ -2412,19 +2412,19 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             </h3>
             {user.is_pro ? (
               <div className="flex flex-col">
-                <span className="text-violet-600 text-[9px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
+                <span className="text-violet-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
                   VERSÃO PRO <Crown size={12} className="fill-violet-600" />
                 </span>
                 {user.pro_expires_at && (
                   <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                    <p className="text-[9px]">INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p className="text-[10px]">INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
                     <div className="flex justify-center mt-2">
                       <button 
                         type="button" 
                         onClick={onUpgradeRequest}
-                        className="bg-violet-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200"
+                        className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px] mr-[30px] ml-[-13px]"
                       >
                         Renovação de Plano
                       </button>
@@ -2433,14 +2433,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 )}
               </div>
             ) : (
-              <p className="text-emerald-600 text-[9px] font-black tracking-[0.2em] uppercase mt-0.5">
+              <p className="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase mt-0.5">
                 VERSÃO GRÁTIS
               </p>
             )}
           </div>
           <button type="button" onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
         </div>
-        <div className="pb-[10px] pr-[20px] pt-[12px] pl-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
+        <div className="mt-2 pb-[10px] px-6 pt-[13px] bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
            <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">E-MAIL</span><span className="text-[12px] font-black text-slate-900 lowercase">{user.email}</span></div>
            <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CPF</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.cpf}</span></div>
            <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.phone}</span></div>
@@ -2450,7 +2450,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           <button 
             type="button" 
             onClick={isPro ? onBackupRequest : () => setShowProMessage(true)} 
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             <Database size={16}/> BACKUP DE DADOS
           </button>
@@ -2459,46 +2459,47 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             type="button" 
             onClick={generateReport} 
             disabled={generatingReport}
-            className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <div className={`w-full py-[11px] mt-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
-              {isPro && localNotificationsEnabled && (
-                <button 
-                  type="button" 
-                  onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
-                  className="p-1 hover:bg-slate-200 rounded-full transition-colors ml-2 text-slate-500 hover:text-slate-800"
-                >
-                  <Settings size={22} className="ml-[42px]" />
-                </button>
-              )}
             </div>
-            <button 
-              type="button"
-              onClick={isPro ? async (e) => {
-                e.stopPropagation();
-                const newState = !localNotificationsEnabled;
-                setLocalNotificationsEnabled(newState);
-                localStorage.setItem('local_notifications_enabled', newState.toString());
-                
-                import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
-                  if (newState) {
-                    setupLocalNotifications().then(() => {
+            <div className="flex items-center gap-3">
+              <button 
+                type="button" 
+                disabled={!isPro || !localNotificationsEnabled}
+                onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
+                className={`p-1 rounded-full transition-colors ${isPro && localNotificationsEnabled ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}
+              >
+                <Settings size={20} />
+              </button>
+              <button 
+                type="button"
+                onClick={isPro ? async (e) => {
+                  e.stopPropagation();
+                  const newState = !localNotificationsEnabled;
+                  setLocalNotificationsEnabled(newState);
+                  localStorage.setItem('local_notifications_enabled', newState.toString());
+                  
+                  import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
+                    if (newState) {
+                      setupLocalNotifications().then(() => {
+                        scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
+                      });
+                    } else {
                       scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
-                    });
-                  } else {
-                    scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
-                  }
-                });
-              } : () => setShowProMessage(true)}
-              className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}
-            >
-              <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isPro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-            </button>
+                    }
+                  });
+                } : () => setShowProMessage(true)}
+                className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}
+              >
+                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isPro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+            </div>
           </div>
 
           {isPro && localNotificationsEnabled && showNotificationSettings && (
