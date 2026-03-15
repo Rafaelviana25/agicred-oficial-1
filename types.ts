@@ -5,6 +5,7 @@ export interface UserProfile {
   cpf: string;
   email: string;
   phone: string;
+  display_id?: string; // ID de 7 dígitos para exibição
   is_pro: boolean;
   pro_expires_at?: string; // Data de expiração do plano PRO
   pro_started_at?: string; // Data de início do plano PRO

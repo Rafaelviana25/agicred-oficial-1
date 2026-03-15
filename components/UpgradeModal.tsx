@@ -180,12 +180,12 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   }, [step, isPaid, expiresIn]);
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-10 z-50 uppercase overflow-y-auto pt-safe-native">
-      <div className="glass-panel rounded-[3rem] lg:rounded-3xl max-w-3xl w-full p-6 lg:p-8 shadow-2xl relative overflow-hidden animate-in slide-in-from-top-10 duration-300 border border-slate-200 bg-white mb-10">
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20">✕</button>
+    <div className="fixed inset-0 bg-white z-50 uppercase overflow-y-auto pt-safe-native">
+      <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl">✕</button>
         
         {isPaid ? (
-          <div className="text-center py-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="text-center py-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full max-w-md">
             <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner shadow-emerald-500/10 ring-8 ring-emerald-500/10">
               <CheckCircle2 size={48} className="animate-bounce" />
             </div>
@@ -196,58 +196,60 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             <p className="text-slate-500 text-sm">AGUARDE... REDIRECIONANDO VOCÊ PARA O DASHBOARD ILIMITADO.</p>
           </div>
         ) : step === 'plans' ? (
-          <div className="space-y-6">
-            <div className="text-center pt-4">
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
-              <p className="text-slate-500 font-bold mt-1 text-[9px] md:text-[10px] tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
+          <div className="w-full max-w-6xl flex flex-col items-center">
+            <div className="text-center pt-12 md:pt-16 mb-8">
+              <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
+              <p className="text-slate-500 font-bold mt-1 text-[10px] md:text-sm tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <div className="grid grid-cols-2 gap-3 md:gap-6 w-full">
               {plans.map((plan) => (
                 <div 
                   key={plan.id}
                   onClick={() => handleSelectPlan(plan)}
-                  className="relative p-3 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col border-[#661c9e] bg-slate-50/50 hover:border-violet-400 hover:bg-white hover:shadow-xl hover:scale-[1.02] group"
+                  className="relative p-4 md:p-6 rounded-[2rem] border-2 md:border-4 transition-all duration-300 cursor-pointer flex flex-col border-[#661c9e] bg-slate-50/50 hover:border-violet-400 hover:bg-white hover:shadow-xl hover:scale-[1.02] group aspect-[1.1/1] md:aspect-[1.4/1] justify-center"
                 >
                   {plan.bestValue && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-2 py-1 rounded-full text-[7px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap z-10">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white px-3 py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest shadow-lg whitespace-nowrap z-10">
                       MELHOR ESCOLHA
                     </span>
                   )}
 
-                  <div className="mb-2 text-center">
-                    <h3 className="text-[10px] font-black text-slate-900 tracking-widest">{plan.label}</h3>
+                  <div className="mb-1 text-center">
+                    <h3 className="text-[10px] md:text-sm font-black text-slate-900 tracking-widest">{plan.label}</h3>
                   </div>
 
-                  <div className="mb-2 text-center">
+                  <div className="mb-2 text-center min-h-[40px] md:min-h-[60px] flex flex-col justify-center">
                     <div className="flex flex-col items-center justify-center">
-                      <span className="text-sm font-black text-slate-900 -mt-[11px]">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
-                      {plan.monthlyAmount && (
-                        <span className="text-[8px] text-slate-500 font-bold mt-0.5">(R$ {plan.monthlyAmount.toFixed(2).replace('.', ',')}/mês)</span>
+                      <span className="text-lg md:text-3xl font-black text-slate-900">R$ {plan.amount.toFixed(2).replace('.', ',')}</span>
+                      {plan.monthlyAmount ? (
+                        <span className="text-[8px] md:text-[11px] text-slate-500 font-bold mt-0.5">(R$ {plan.monthlyAmount.toFixed(2).replace('.', ',')}/mês)</span>
+                      ) : (
+                        <span className="text-[8px] md:text-[11px] text-transparent font-bold mt-0.5 opacity-0 select-none">placeholder</span>
                       )}
                     </div>
                   </div>
 
                   <ul className="space-y-1 mb-3 flex-grow border-t border-slate-100 pt-2">
-                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
                       <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO ILIMITADO
                     </li>
-                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
                       <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> NOTIFICAÇÕES
                     </li>
-                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
                       <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> BACKUP
                     </li>
-                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
                       <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> RELATORIOS
                     </li>
-                    <li className="flex items-center text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
                       <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO AO COMPUTADOR WEB
                     </li>
                   </ul>
 
                   <button 
-                    className="w-full py-2 px-2 rounded-xl text-[8px] font-black tracking-widest uppercase transition-all bg-slate-200 text-slate-600 group-hover:bg-violet-600 group-hover:text-white"
+                    className="w-full py-2 md:py-3 px-2 rounded-xl text-[9px] md:text-[11px] font-black tracking-widest uppercase transition-all bg-slate-200 text-slate-600 group-hover:bg-violet-600 group-hover:text-white mt-auto"
                   >
                     ASSINAR
                   </button>
@@ -255,20 +257,22 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               ))}
             </div>
 
-            <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="mt-10 flex flex-col items-center gap-2">
               <div className="flex items-center gap-3 opacity-60 grayscale">
-                 <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">PROCESSADO POR</span>
-                 <span className="font-black text-xs text-blue-900 tracking-tighter">MERCADO PAGO</span>
+                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">PROCESSADO POR</span>
+                 <span className="font-black text-sm text-blue-900 tracking-tighter">MERCADO PAGO</span>
               </div>
-              <div className="flex items-center gap-1.5 text-slate-400 text-[9px] font-bold uppercase tracking-widest">
+              <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                 <ShieldCheck className="w-3 h-3" />
                 AMBIENTE SEGURO E CRIPTOGRAFADO
               </div>
             </div>
 
-            <button onClick={onClose} className="w-full bg-emerald-500 text-white py-4 rounded-2xl text-[10px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-6 shadow-lg shadow-emerald-500/20">
-              CONTINUAR COM CONTA GRÁTIS (LIMITADA)
-            </button>
+            {!user.is_pro && (
+              <button onClick={onClose} className="w-full max-w-md bg-emerald-500 text-white py-4 rounded-2xl text-[11px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-8 shadow-lg shadow-emerald-500/20">
+                CONTINUAR COM CONTA GRÁTIS (LIMITADA)
+              </button>
+            )}
           </div>
         ) : step === 'form' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">

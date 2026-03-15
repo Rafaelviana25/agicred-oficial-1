@@ -68,12 +68,14 @@ const App: React.FC = () => {
       .eq('id', userId)
       .maybeSingle();
 
-      const fallbackProfile = {
+    const displayId = Math.floor(1000000 + Math.random() * 9000000).toString();
+    const fallbackProfile = {
       id: userId,
       email: currentSession?.user?.email || '',
       full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
       cpf: currentSession?.user?.user_metadata?.cpf || '',
       phone: currentSession?.user?.user_metadata?.phone || '',
+      display_id: displayId,
       is_pro: false,
       created_at: new Date().toISOString()
     };
@@ -89,7 +91,23 @@ const App: React.FC = () => {
     }
 
     if (data) {
-      setProfile(data);
+      if (!data.display_id) {
+        const newDisplayId = Math.floor(1000000 + Math.random() * 9000000).toString();
+        const { data: updatedProfile } = await supabase
+          .from('profiles')
+          .update({ display_id: newDisplayId })
+          .eq('id', userId)
+          .select()
+          .single();
+        
+        if (updatedProfile) {
+          setProfile(updatedProfile);
+        } else {
+          setProfile({ ...data, display_id: newDisplayId });
+        }
+      } else {
+        setProfile(data);
+      }
       setHasSchemaError(false);
       setupLocalNotifications();
     } else {

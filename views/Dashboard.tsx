@@ -239,9 +239,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 
   useEffect(() => {
     if (contracts.length > 0 && clients.length > 0) {
-      scheduleContractNotifications(contracts, clients);
+      scheduleContractNotifications(contracts, clients, userProfile?.pro_expires_at);
     }
-  }, [contracts, clients]);
+  }, [contracts, clients, userProfile?.pro_expires_at]);
 
   const getInstallmentDueDate = (c: Contract, installmentIndex: number) => {
     const firstDueDate = new Date(c.end_date + 'T12:00:00');
@@ -517,7 +517,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
            )}
         </div>
 
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-3 pb-[22px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-3 pb-[33px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
            <MobileTab label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<LayoutDashboard size={22}/>} />
            <MobileTab label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} icon={<Users size={22}/>} />
            <MobileTab label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} icon={<FileText size={22}/>} />
@@ -560,7 +560,7 @@ const SidebarItem = ({ icon, label, active, onClick }: any) => (
 );
 
 const MobileTab = ({ icon, label, active, onClick, hasBadge, className = "" }: any) => (
-  <button onClick={onClick} className={`flex flex-col items-center justify-center flex-1 gap-1 transition-all outline-none mb-[-10px] ${active ? 'text-violet-600' : 'text-slate-400'} ${className}`}>
+  <button onClick={onClick} className={`flex flex-col items-center justify-center flex-1 gap-1 transition-all outline-none mb-[-21px] ${active ? 'text-violet-600' : 'text-slate-400'} ${className}`}>
     <div className="relative flex items-center justify-center">
       {icon}
       {hasBadge && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></div>}
@@ -681,14 +681,14 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
       </div>
 
       <div className="py-8 px-6 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 -mt-[20px] mx-0">
           <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-[0.2em] uppercase">PAGOS ESTE MÊS</p>
           <h2 className="text-2xl lg:text-4xl font-black text-emerald-500 tracking-tighter flex items-center justify-center">
             <span className="text-sm lg:text-lg mr-1 font-bold text-emerald-500">R$</span>
             {totalPaidInMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </h2>
         </div>
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 -mt-[20px] ml-0">
           <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-[0.2em] uppercase">PENDENTE ESTE MÊS</p>
           <h2 className="text-2xl lg:text-4xl font-black text-rose-500 tracking-tighter flex items-center justify-center">
             <span className="text-sm lg:text-lg mr-1 font-bold text-rose-500">R$</span>
@@ -709,7 +709,7 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+            <div className="px-[20px] pt-[7px] pb-[10px] border-b border-slate-200 flex justify-between items-center bg-slate-50/50 mx-0">
               <h3 className="text-rose-500 text-[12px] lg:text-sm font-black tracking-tighter uppercase">
                 CONTRATOS PENDENTES - <span className="text-slate-900">{monthsNames[currentMonthIdx].toUpperCase()}</span>
               </h3>
@@ -722,11 +722,11 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
                 <div className="py-12 text-center"><p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">SEM VENDAS PARA ESTE MÊS</p></div>
               )}
             </div>
-            <button onClick={() => setActiveTab('contracts')} className="w-full bg-slate-50 py-4 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER TODAS AS VENDAS</button>
+            <button onClick={() => setActiveTab('contracts')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER TODAS AS VENDAS</button>
           </div>
 
           <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+            <div className="px-[20px] pt-[7px] pb-[10px] border-b border-slate-200 flex justify-between items-center bg-slate-50/50 mx-0">
               <h3 className="text-emerald-500 text-[12px] lg:text-sm font-black tracking-tighter uppercase">
                 CONTRATOS PAGOS - <span className="text-slate-900">{monthsNames[currentMonthIdx].toUpperCase()}</span>
               </h3>
@@ -739,7 +739,7 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
                 <div className="py-12 text-center"><p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">NENHUM RECEBIMENTO ESTE MÊS</p></div>
               )}
             </div>
-            <button onClick={() => setActiveTab('settled')} className="w-full bg-slate-50 py-4 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER HISTÓRICO DE PAGOS</button>
+            <button onClick={() => setActiveTab('settled')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER HISTÓRICO DE PAGOS</button>
           </div>
         </div>
       </div>
@@ -751,18 +751,18 @@ const ContractListItem: React.FC<{ c: any; clientName?: string; onSelect: (c: an
   const valueToShow = Number((isPaid && c.status === 'paid') ? c.total_amount : c.monthly_interest) || 0;
   return (
     <div onClick={() => onSelect(c)} className="p-3.5 hover:bg-slate-50 transition-colors cursor-pointer group">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px] font-black text-slate-900 uppercase truncate max-w-[190px] group-hover:text-violet-600 transition-colors">
+      <div className="flex items-center justify-between mb-1.5 pl-0 text-[20px]">
+        <span className="text-[12px] font-black text-slate-900 uppercase truncate max-w-[190px] group-hover:text-violet-600 transition-colors">
           {isPaid && <CheckCircle size={9} className="inline mr-1.5 text-emerald-500"/>}
           {clientName}
         </span>
-        <p className={`text-[11px] font-black ${colorClass}`}>R$ {valueToShow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        <p className={`text-[13px] font-black ${colorClass}`}>R$ {valueToShow.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
       </div>
       <div className="flex justify-between items-center">
-         <div className="flex items-center gap-1.5 text-slate-500 text-[8px] font-black uppercase tracking-widest">
+         <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-black uppercase tracking-widest">
             <CalendarIcon size={9}/> {displayDate ? displayDate.toLocaleDateString('pt-BR') : new Date(c.end_date + 'T12:00:00').toLocaleDateString()}
          </div>
-         <span className={`text-[8px] font-black group-hover:underline ${isPaid ? 'text-slate-500' : 'text-violet-600'}`}>
+         <span className={`text-[10px] font-black group-hover:underline ${isPaid ? 'text-slate-500' : 'text-violet-600'}`}>
             {isPaid ? 'PAGO' : 'VER DETALHES'}
          </span>
       </div>
@@ -775,8 +775,8 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
     <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm flex items-center justify-between gap-4 px-[14px] mt-[-37px] mb-0 pt-[6px] pb-[9px] mx-0">
       <div className="flex items-center gap-4 flex-1">
         <div className="flex flex-col shrink-0">
-          <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">CLIENTES CADASTRADOS</h3>
-          <span className="text-[8px] text-violet-600 font-black tracking-widest uppercase">{clients.length} CLIENTES</span>
+          <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">CLIENTES CADASTRADOS</h3>
+          <span className="text-[9px] text-violet-600 font-black tracking-widest uppercase">{clients.length} CLIENTES</span>
         </div>
         
         <div className="relative flex-1 max-w-xs">
@@ -806,7 +806,7 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
             <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0"><User size={16} /></div>
             <div className="overflow-hidden">
               <h4 className="font-black text-slate-900 text-[11px] uppercase leading-tight truncate group-hover:text-violet-600 transition-colors">{c.full_name}</h4>
-              <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest mt-0.5 truncate">{c.phone}</p>
+              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5 truncate">{c.phone}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1960,7 +1960,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const rescheduleNotifications = () => {
     console.log("Solicitando reagendamento de notificações...");
     import('../services/localNotifications').then(({ scheduleContractNotifications }) => {
-      scheduleContractNotifications(contracts, clients);
+      scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
     });
   };
 
@@ -2406,17 +2406,29 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
-            <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight">{user.full_name}</h2>
+            <h3 className="text-[13px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
+              {user.full_name}
+              {user.display_id && <span className="text-slate-400 ml-2 font-bold text-[10px]">ID:{user.display_id}</span>}
+            </h3>
             {user.is_pro ? (
               <div className="flex flex-col">
-                <p className="text-violet-600 text-[11px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
+                <span className="text-violet-600 text-[9px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
                   VERSÃO PRO <Crown size={12} className="fill-violet-600" />
-                </p>
+                </span>
                 {user.pro_expires_at && (
                   <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                    <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p className="text-[9px]">INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
+                    <div className="flex justify-center mt-2">
+                      <button 
+                        type="button" 
+                        onClick={onUpgradeRequest}
+                        className="bg-violet-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200"
+                      >
+                        Renovação de Plano
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2428,10 +2440,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           </div>
           <button type="button" onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
         </div>
-        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
-           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">E-MAIL</span><span className="text-[10px] font-black text-slate-900 lowercase">{user.email}</span></div>
-           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">CPF</span><span className="text-[10px] font-black text-slate-900 uppercase">{user.cpf}</span></div>
-           <div className="flex justify-between py-1"><span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[10px] font-black text-slate-900 uppercase">{user.phone}</span></div>
+        <div className="pb-[10px] pr-[20px] pt-[12px] pl-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
+           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">E-MAIL</span><span className="text-[12px] font-black text-slate-900 lowercase">{user.email}</span></div>
+           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CPF</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.cpf}</span></div>
+           <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.phone}</span></div>
         </div>
         {!user.is_pro && <button type="button" onClick={onUpgradeRequest} className="w-full primary-gradient text-white py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:shadow-violet-500/25 transition-all flex items-center justify-center gap-2 active:scale-95"><Crown size={18}/> ATIVAR PRO</button>}
         <div className="space-y-2">
@@ -2452,7 +2464,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <div className={`w-full py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+          <div className={`w-full py-[11px] mt-2 rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
               {isPro && localNotificationsEnabled && (
@@ -2461,7 +2473,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                   onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
                   className="p-1 hover:bg-slate-200 rounded-full transition-colors ml-2 text-slate-500 hover:text-slate-800"
                 >
-                  <Settings size={22} />
+                  <Settings size={22} className="ml-[42px]" />
                 </button>
               )}
             </div>
@@ -2476,10 +2488,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
                   if (newState) {
                     setupLocalNotifications().then(() => {
-                      scheduleContractNotifications(contracts, clients);
+                      scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
                     });
                   } else {
-                    scheduleContractNotifications(contracts, clients);
+                    scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
                   }
                 });
               } : () => setShowProMessage(true)}
@@ -2537,14 +2549,6 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                   </button>
                 </div>
 
-                {Capacitor.isNativePlatform() && (
-                  <div className="mt-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                    <p className="text-[9px] font-bold text-amber-700 leading-relaxed uppercase">
-                      <Info size={10} className="inline mr-1 mb-0.5" />
-                      Dica: Para garantir que as notificações cheguem com o app fechado, desative a "Otimização de Bateria" para o Agicred nas configurações do seu celular.
-                    </p>
-                  </div>
-                )}
                 <button 
                   type="button" 
                   onClick={() => setShowNotificationSettings(false)}

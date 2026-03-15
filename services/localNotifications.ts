@@ -24,7 +24,7 @@ export const setupLocalNotifications = async () => {
   }
 };
 
-export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[]) => {
+export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[], proExpiresAt?: string | null) => {
   if (!Capacitor.isNativePlatform()) return;
 
   const isEnabled = localStorage.getItem('local_notifications_enabled') === 'true';
@@ -69,6 +69,28 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       });
     } catch (e) {
       console.error("Erro ao criar canal de notificação:", e);
+    }
+  }
+
+  // PRO Expiry Notification
+  if (proExpiresAt) {
+    const expiryDate = new Date(proExpiresAt);
+    const oneDayBefore = new Date(expiryDate);
+    oneDayBefore.setDate(expiryDate.getDate() - 1);
+    oneDayBefore.setHours(hours, minutes, 0, 0);
+
+    if (oneDayBefore.getTime() > baseDate.getTime()) {
+      notificationsToSchedule.push({
+        title: 'Renovação de Plano',
+        body: 'ATENÇÃO! Falta 1 dia para finalizar seu plano PRO, Faça a renovação',
+        id: 5000,
+        channelId: channelId,
+        schedule: { 
+          at: oneDayBefore,
+          allowWhileIdle: true
+        },
+        sound: hasSound ? 'default' : undefined,
+      });
     }
   }
 

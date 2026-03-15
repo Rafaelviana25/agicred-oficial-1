@@ -72,12 +72,14 @@ Pelo menos um número (0 a 9)`;
 
     if (data.user) {
       // Create profile immediately to avoid "Complete Profile" step
+      const displayId = Math.floor(1000000 + Math.random() * 9000000).toString();
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         email: form.email,
         full_name: form.fullName,
         cpf: form.cpf,
         phone: form.phone,
+        display_id: displayId,
         created_at: new Date().toISOString()
       });
 
