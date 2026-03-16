@@ -1486,7 +1486,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           <div className="flex-1 overflow-hidden">
              <div className="flex items-center gap-1.5 mb-1.5 text-emerald-600">
                 <FileCheck size={14} />
-                <p className="text-[7px] font-black tracking-[0.3em] uppercase">TÍTULO # {contract.id.slice(0, 8)}</p>
+                <p className="text-[8px] font-black tracking-[0.3em] uppercase">TÍTULO # {contract.id.slice(0, 8)}</p>
              </div>
              <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight truncate">{client?.full_name}</h2>
           </div>
@@ -1537,35 +1537,34 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           </div>
         ) : (
           <>
-            <div className="glass-panel p-5 rounded-2xl border border-slate-700 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group bg-slate-800">
-               <div className="absolute top-0 right-0 p-2 opacity-5 text-white"><Coins size={40}/></div>
-               <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] mb-1">MONTANTE TOTAL DO CONTRATO</p>
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group bg-white mt-[9px] mb-[-4px] pb-[13px]">
+               <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-900"><Coins size={40}/></div>
+               <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.3em] mt-[-12px] mb-[3px]">MONTANTE TOTAL DO CONTRATO</p>
                <div className="flex items-baseline gap-1.5">
-                  <span className="text-emerald-400 text-xs font-black">R$</span>
-                  <span className="text-2xl font-black text-white tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-emerald-600 text-xs font-black">R$</span>
+                  <span className="text-2xl font-black text-slate-900 tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-700 rounded-full border border-slate-600">
-                  <Percent size={10} className="text-emerald-400"/>
-                  <span className="text-[7px] font-black text-emerald-400 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
+               <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200">
+                  <span className="text-[9px] font-black text-emerald-600 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-               <div className="glass-panel p-3 rounded-2xl border border-violet-200 flex flex-col shadow-sm bg-white">
-                  <span className="text-[8px] text-violet-500 font-black tracking-widest mb-1 uppercase">CAPITAL BASE</span>
-                  <span className="text-[12px] font-black text-violet-600 uppercase">R$ {contract.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               <div className="glass-panel p-3 rounded-2xl border border-violet-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+                  <span className="text-[10px] text-violet-500 font-black tracking-widest mb-1 uppercase">CAPITAL BASE</span>
+                  <span className="text-[14px] font-black text-violet-600 uppercase">R$ {contract.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-rose-200 flex flex-col shadow-sm bg-white">
-                  <span className="text-[8px] text-rose-500 font-black tracking-widest mb-1 uppercase">TOTAL JUROS</span>
-                  <span className="text-[12px] font-black text-rose-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               <div className="glass-panel p-3 rounded-2xl border border-rose-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+                  <span className="text-[10px] text-rose-500 font-black tracking-widest mb-1 uppercase">TOTAL JUROS</span>
+                  <span className="text-[14px] font-black text-rose-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-emerald-200 flex flex-col shadow-sm bg-white">
-                  <span className="text-[8px] text-emerald-600 font-black tracking-widest mb-1 uppercase">VALOR JÁ PAGO</span>
-                  <span className="text-[12px] font-black text-emerald-600 uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               <div className="glass-panel p-3 rounded-2xl border border-emerald-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+                  <span className="text-[10px] text-emerald-600 font-black tracking-widest mb-1 uppercase">VALOR JÁ PAGO</span>
+                  <span className="text-[14px] font-black text-emerald-600 uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-blue-200 flex flex-col shadow-sm bg-white">
-                  <span className="text-[8px] text-blue-500 font-black tracking-widest mb-1 uppercase">SALDO RESTANTE</span>
-                  <span className="text-[12px] font-black text-blue-600 uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               <div className="glass-panel p-3 rounded-2xl border border-blue-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+                  <span className="text-[10px] text-blue-500 font-black tracking-widest mb-1 uppercase">SALDO RESTANTE</span>
+                  <span className="text-[14px] font-black text-blue-600 uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
             </div>
 
@@ -1588,12 +1587,12 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                      const canToggle = (isNextToPay && contract.status !== 'paid') || isLastPaid;
 
                      return (
-                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-emerald-50 border-emerald-100' : 'glass-panel border-slate-200 shadow-sm bg-white'}`}>
+                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-slate-100 border-slate-200' : 'glass-panel border-slate-200 shadow-sm bg-white'}`}>
                            <div className="flex items-center gap-3">
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{i + 1}</div>
                               <div>
-                                 <p className="text-[10px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
-                                 <p className="text-[8px] text-rose-500 font-black uppercase mt-1.5 tracking-widest">VENCIMENTO {dueDate.toLocaleDateString('pt-BR')}</p>
+                                 <p className="text-[12px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
+                                 <p className="text-[10px] text-rose-500 font-black uppercase mt-[6px] mb-[-3px] ml-[-1px] tracking-widest">VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
                                  {isPaid && (
                                     editingPaymentDate?.index === i ? (
                                         <div onClick={e => e.stopPropagation()} className="mt-1 flex items-center gap-1">
@@ -1605,7 +1604,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                                     if (e.key === 'Enter') updatePaymentDate(i, editingPaymentDate.date);
                                                     if (e.key === 'Escape') setEditingPaymentDate(null);
                                                 }}
-                                                className="text-[8px] font-black bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-600 outline-none w-24 shadow-sm"
+                                                className="text-[10px] font-black bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-600 outline-none w-24 shadow-sm"
                                                 autoFocus
                                             />
                                             <button onClick={() => updatePaymentDate(i, editingPaymentDate.date)} className="w-5 h-5 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center hover:bg-emerald-200 transition-colors">
@@ -1617,7 +1616,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                         </div>
                                     ) : (
                                         <div onClick={(e) => { e.stopPropagation(); setEditingPaymentDate({ index: i, date: contract.payment_history?.[i] || new Date().toISOString().split('T')[0] }) }} className="cursor-pointer hover:bg-slate-50 rounded px-1 -ml-1 transition-colors group/date w-fit">
-                                            <p className="text-[8px] text-emerald-800 font-black uppercase mt-1.5 tracking-widest flex items-center gap-1">
+                                            <p className="text-[10px] text-emerald-800 font-black uppercase mt-1.5 tracking-widest flex items-center gap-1">
                                                 PAGO {contract.payment_history?.[i] ? new Date(contract.payment_history[i] + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')} 
                                                 <Edit2 size={8} className="opacity-0 group-hover/date:opacity-50 transition-opacity"/>
                                             </p>
@@ -1628,8 +1627,8 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                            </div>
                            <div className="flex items-center gap-3">
                               <p className={`text-[11px] font-black ${isPaid ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              <button onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} disabled={!canToggle || updating} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'text-violet-600 bg-violet-100 border border-violet-200 shadow-sm' : canToggle ? 'bg-slate-100 text-emerald-600 shadow-sm hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}>
-                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? <RefreshCw className="animate-spin" size={12}/> : isPaid ? <CheckCircle size={14} className="text-violet-600"/> : <Banknote size={14}/>}
+                              <button onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} disabled={!canToggle || updating} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'text-emerald-600 bg-emerald-100 border border-emerald-200 shadow-sm' : canToggle ? 'bg-slate-100 text-emerald-600 shadow-sm hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}>
+                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? <RefreshCw className="animate-spin" size={12}/> : isPaid ? <CheckCircle size={14} className="text-emerald-600"/> : <Banknote size={14}/>}
                               </button>
                            </div>
                         </div>

@@ -42,6 +42,7 @@ export interface Contract {
   status: 'active' | 'paid' | 'overdue';
   created_at: string;
   payment_history?: Record<string, string>; // Índice da parcela -> Data de pagamento (ISO string ou YYYY-MM-DD)
+  due_dates_override?: Record<string, string>; // Índice da parcela -> Data de vencimento personalizada
 }
 
 export interface AbacatePayResponse {
