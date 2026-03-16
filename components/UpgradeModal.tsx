@@ -301,7 +301,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                 className="w-full primary-gradient text-white py-4 rounded-2xl font-black text-[11px] tracking-widest shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition active:scale-95 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
               >
                 {loading ? <RefreshCw className="animate-spin" size={18} /> : <QrCode size={18} />}
-                {loading ? 'PREPARANDO...' : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
+                {loading ? 'COMUNICANDO COM O BANCO...' : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
               </button>
             </form>
           </div>

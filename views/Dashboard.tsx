@@ -653,35 +653,35 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
   return (
     <div className="animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-12">
       <div className="px-3 pt-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4 h-[146.938px] w-[351.016px] pb-0 mt-[-17px]">
           <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-rose-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-widest uppercase mb-1 truncate">CAPITAL EMPRESTADO</p>
-            <h4 className="text-[14px] md:text-[18px] lg:text-[22px] font-black text-rose-500 tracking-tight leading-none truncate">
+            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[19px] mt-[-9px]">CAPITAL EMPRESTADO</p>
+            <h4 className="text-[16px] font-black text-rose-500 tracking-tight leading-none truncate">
               R$ {totalLoaned.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
           <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-blue-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-widest uppercase mb-1 truncate">CAPITAL A RECEBER</p>
-            <h4 className="text-[14px] md:text-[18px] lg:text-[22px] font-black text-blue-500 tracking-tight leading-none truncate">
+            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[18px] mt-[-9px]">CAPITAL A RECEBER</p>
+            <h4 className="text-[16px] font-black text-blue-500 tracking-tight leading-none truncate">
               R$ {totalToReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
           <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-emerald-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-widest uppercase mb-1 truncate">JUROS JÁ RECEBIDOS</p>
-            <h4 className="text-[14px] md:text-[18px] lg:text-[22px] font-black text-emerald-500 tracking-tight leading-none truncate">
+            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[24px] mt-[-9px] w-[135.02px]">JUROS JÁ RECEBIDOS</p>
+            <h4 className="text-[16px] font-black text-emerald-500 tracking-tight leading-none truncate">
               R$ {totalInterestReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
           <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-violet-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-widest uppercase mb-1 truncate">JUROS A RECEBER</p>
-            <h4 className="text-[14px] md:text-[18px] lg:text-[22px] font-black text-violet-500 tracking-tight leading-none truncate">
+            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[21.9922px] mt-[-9px] w-[135.02px]">JUROS A RECEBER</p>
+            <h4 className="text-[16px] font-black text-violet-500 tracking-tight leading-none truncate">
               R$ {totalInterestToReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
         </div>
       </div>
 
-      <div className="py-8 px-6 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
+      <div className="pt-[32px] pb-[15px] px-6 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
         <div className="text-center space-y-2 -mt-[20px] mx-0">
           <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-[0.2em] uppercase">PAGOS ESTE MÊS</p>
           <h2 className="text-2xl lg:text-4xl font-black text-emerald-500 tracking-tighter flex items-center justify-center">
@@ -699,11 +699,11 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
       </div>
 
       <div className="px-5 space-y-6 max-w-7xl mx-auto pb-24">
-        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 max-w-2xl mx-auto">
-          <button onClick={onAddContract} className="primary-gradient text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:shadow-violet-500/25">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 max-w-2xl mx-auto mt-0 mb-[-7px] h-[50.9805px] w-[335px] p-0">
+          <button onClick={onAddContract} className="primary-gradient text-white py-[16px] px-0 m-0 rounded-full flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:shadow-violet-500/25">
             <Plus size={18} /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CONTRATO</span>
           </button>
-          <button onClick={onAddClient} className="bg-emerald-500 text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all hover:bg-emerald-600">
+          <button onClick={onAddClient} className="bg-emerald-500 text-white py-[16px] px-0 m-0 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all hover:bg-emerald-600">
             <Users size={18} className="text-white" /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CLIENTE</span>
           </button>
         </div>
@@ -909,9 +909,9 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
 
   return (
     <div className="space-y-3 animate-in fade-in duration-500 uppercase font-black pb-10 text-slate-900">
-      <div className="glass-panel p-3.5 rounded-3xl shadow-sm sticky top-0 z-10 mx-auto w-full mt-[-32px]">
+      <div className="glass-panel rounded-3xl shadow-sm sticky top-0 z-10 mx-auto w-full mt-[-32px] pt-[7px] pb-[7px] pr-[14px] pl-[14px] border-[#efefef] bg-white">
         <div className="flex items-center justify-between mb-4 px-1">
-          <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">LISTAGEM DE TÍTULOS</h3>
+          <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">LISTAGEM DE TÍTULOS</h3>
           <div className="flex items-center gap-2 bg-slate-100 px-2.5 py-1 rounded-xl">
              <button onClick={() => setCurrentYear(currentYear - 1)} className="p-0.5 hover:bg-slate-200 rounded transition-all text-slate-500 hover:text-slate-900"><ChevronLeft size={14} /></button>
              <span className="text-[12px] font-black text-slate-900 tracking-widest min-w-[32px] text-center">{currentYear}</span>
@@ -919,7 +919,7 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
           </div>
         </div>
         
-        <div className="flex items-center justify-between gap-1 w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-1 overflow-hidden mr-0 ml-[-14px] pr-[1px] mt-0 mb-0 w-[346.539px] h-[45.9961px] pb-0 pt-0 pl-[3px]">
           {monthsAbbr.map((m, idx) => (
             <button 
               key={m}

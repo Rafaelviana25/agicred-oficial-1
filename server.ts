@@ -282,13 +282,14 @@ const checkAndSendOverdueNotifications = async () => {
       let planType = 'monthly';
       let description = 'Upgrade Agicred PRO - Mensal';
 
-      if (amount === 109.90) {
+      // Match the amounts from UpgradeModal.tsx
+      if (amount === 156.00) {
         planType = 'annual';
         description = 'Upgrade Agicred PRO - Anual';
-      } else if (amount === 69.90) {
+      } else if (amount === 108.00) {
         planType = 'semiannual';
         description = 'Upgrade Agicred PRO - Semestral';
-      } else if (amount === 39.90) {
+      } else if (amount === 66.00) {
         planType = 'quarterly';
         description = 'Upgrade Agicred PRO - Trimestral';
       }
@@ -317,8 +318,23 @@ const checkAndSendOverdueNotifications = async () => {
         }
       };
 
-      const response = await payment.create({ body });
-      console.log("Mercado Pago Response:", JSON.stringify(response, null, 2));
+      // Use a unique idempotency key to potentially speed up processing and prevent duplicates
+      const idempotencyKey = `pay_${userId}_${Date.now()}`;
+
+      // Use direct fetch for faster execution and less overhead than the SDK
+      const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': idempotencyKey
+        },
+        body: JSON.stringify(body)
+      });
+
+      const response = await mpResponse.json();
+      
+      console.log(`Payment created for user ${userId}, status: ${response.status}`);
 
       if (response.status === 'rejected') {
         return res.status(400).json({ error: 'Pagamento rejeitado pelo Mercado Pago. Verifique se o CPF e os dados estão corretos.' });
