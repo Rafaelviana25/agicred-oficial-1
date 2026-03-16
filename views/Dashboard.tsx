@@ -1068,7 +1068,7 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
 
   return (
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[105] overflow-y-auto uppercase font-black text-slate-900">
-      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-6 animate-in shadow-2xl border border-slate-200 bg-white">
+      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-6 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 shadow-sm border border-slate-200"><User size={20}/></div>
@@ -1395,7 +1395,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
 
   return (
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900">
-      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-lg p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
+      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
         {showPartialPay && (
           <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-y-auto no-scrollbar pb-10 text-slate-900">
              <div className="flex justify-between items-center mb-6 px-1">
@@ -1719,7 +1719,7 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
   
   return (
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
-      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
+      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVO CLIENTE</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">SISTEMA AGICRED</p></div>
            <button onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
@@ -2403,7 +2403,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   return (
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
-      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full max-sm p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
+      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
             <h3 className="text-[13px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
@@ -2417,7 +2417,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 </span>
                 {user.pro_expires_at && (
                   <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                    <p className="text-[10px]">INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
                     <div className="flex justify-center mt-2">
@@ -2464,7 +2464,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border box-border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
             </div>
@@ -2475,7 +2475,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
                 className={`p-1 rounded-full transition-colors ${isPro && localNotificationsEnabled ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}
               >
-                <Settings size={20} />
+                <Settings size={16} />
               </button>
               <button 
                 type="button"

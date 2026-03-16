@@ -68,7 +68,10 @@ const App: React.FC = () => {
       .eq('id', userId)
       .maybeSingle();
 
-    const displayId = Math.floor(1000000 + Math.random() * 9000000).toString();
+    const cachedId = localStorage.getItem(`display_id_${userId}`);
+    const displayId = cachedId || Math.floor(1000000 + Math.random() * 9000000).toString();
+    if (!cachedId) localStorage.setItem(`display_id_${userId}`, displayId);
+
     const fallbackProfile = {
       id: userId,
       email: currentSession?.user?.email || '',
@@ -92,7 +95,8 @@ const App: React.FC = () => {
 
     if (data) {
       if (!data.display_id) {
-        const newDisplayId = Math.floor(1000000 + Math.random() * 9000000).toString();
+        const newDisplayId = cachedId || Math.floor(1000000 + Math.random() * 9000000).toString();
+        localStorage.setItem(`display_id_${userId}`, newDisplayId);
         const { data: updatedProfile } = await supabase
           .from('profiles')
           .update({ display_id: newDisplayId })
@@ -106,6 +110,7 @@ const App: React.FC = () => {
           setProfile({ ...data, display_id: newDisplayId });
         }
       } else {
+        localStorage.setItem(`display_id_${userId}`, data.display_id);
         setProfile(data);
       }
       setHasSchemaError(false);
