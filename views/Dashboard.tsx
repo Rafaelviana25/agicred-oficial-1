@@ -2465,7 +2465,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border box-border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border box-border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'} lg:hidden`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
             </div>

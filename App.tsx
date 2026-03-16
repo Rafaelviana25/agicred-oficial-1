@@ -61,16 +61,22 @@ const App: React.FC = () => {
   }, []);
 
   const fetchProfile = async (userId: string, currentSession: any) => {
-    // Usamos maybeSingle para não dar erro caso não encontre nada
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
-    const cachedId = localStorage.getItem(`display_id_${userId}`);
-    const displayId = cachedId || Math.floor(1000000 + Math.random() * 9000000).toString();
-    if (!cachedId) localStorage.setItem(`display_id_${userId}`, displayId);
+    const generateFixedId = (id: string): string => {
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        hash = ((hash << 5) - hash) + id.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash % 9000000 + 1000000).toString();
+    };
+
+    const fixedId = data?.display_id || generateFixedId(userId);
 
     const fallbackProfile = {
       id: userId,
@@ -78,7 +84,7 @@ const App: React.FC = () => {
       full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
       cpf: currentSession?.user?.user_metadata?.cpf || '',
       phone: currentSession?.user?.user_metadata?.phone || '',
-      display_id: displayId,
+      display_id: fixedId,
       is_pro: false,
       created_at: new Date().toISOString()
     };
@@ -95,11 +101,9 @@ const App: React.FC = () => {
 
     if (data) {
       if (!data.display_id) {
-        const newDisplayId = cachedId || Math.floor(1000000 + Math.random() * 9000000).toString();
-        localStorage.setItem(`display_id_${userId}`, newDisplayId);
         const { data: updatedProfile } = await supabase
           .from('profiles')
-          .update({ display_id: newDisplayId })
+          .update({ display_id: fixedId })
           .eq('id', userId)
           .select()
           .single();
@@ -107,10 +111,9 @@ const App: React.FC = () => {
         if (updatedProfile) {
           setProfile(updatedProfile);
         } else {
-          setProfile({ ...data, display_id: newDisplayId });
+          setProfile({ ...data, display_id: fixedId });
         }
       } else {
-        localStorage.setItem(`display_id_${userId}`, data.display_id);
         setProfile(data);
       }
       setHasSchemaError(false);
