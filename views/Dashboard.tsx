@@ -355,15 +355,28 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         <div className="p-6 xl:p-8 flex flex-col gap-1">
           <AgicredLogo textClassName="text-xl xl:text-2xl text-slate-900" />
         </div>
-        <nav className="flex-1 px-4 xl:px-6 py-2 xl:py-4 space-y-1 xl:space-y-2">
+        <nav className="flex-1 px-[15px] pt-[7px] pb-[15px] -mt-[19px] -ml-[1px] mr-[1px] -mb-[8px] space-y-1 xl:space-y-2">
           <SidebarItem icon={<LayoutDashboard size={20} />} label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
           <SidebarItem icon={<Users size={20} />} label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} />
-          <SidebarItem icon={<Plus size={20} />} label="NOVA OPERAÇÃO" active={false} onClick={() => {
-             handleOpenContractModal();
-          }} />
           <SidebarItem icon={<AlertCircle size={20} />} label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} />
           <SidebarItem icon={<FileText size={20} />} label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} />
           <SidebarItem icon={<History size={20} />} label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => setActiveTab('settled')} />
+          
+          <button 
+            onClick={handleOpenContractModal}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-[8px] font-black tracking-wider uppercase text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30 hover:opacity-90"
+          >
+            <Plus size={20} />
+            <span className="text-xs">NOVA OPERAÇÃO</span>
+          </button>
+
+          <button 
+            onClick={() => setShowClientModal(true)}
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-[8px] font-black tracking-wider uppercase text-white bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 hover:opacity-90"
+          >
+            <Plus size={20} />
+            <span className="text-xs">NOVO CLIENTE</span>
+          </button>
         </nav>
         <div className="p-4 xl:p-6 mt-auto space-y-4">
           <div className={`px-3 py-1.5 xl:py-2.5 rounded-lg flex flex-col items-center justify-center gap-1 ${isPro ? 'bg-violet-100 text-violet-700' : 'bg-emerald-100 text-emerald-700'}`}>
@@ -375,22 +388,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
                 <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                <p className="font-black text-[#21b645]">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
+                <p className="font-black text-black">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
               </div>
             )}
           </div>
-          <button onClick={() => setShowProfile(true)} className="w-full flex items-center gap-2 p-2.5 xl:p-3.5 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 transition-all text-left shadow-sm">
-            <div className="w-8 h-8 xl:w-10 xl:h-10 rounded-lg primary-gradient flex items-center justify-center text-white text-xs xl:text-sm font-black uppercase shadow-lg shrink-0">
-              {userProfile?.full_name?.[0]}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-slate-900 text-[10px] xl:text-xs truncate uppercase font-black leading-tight">{userProfile?.full_name?.split(' ')[0]}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                 {isPro && <Crown size={8} className="text-violet-600 fill-violet-600" />}
-                 <span className={`text-[7px] xl:text-[9px] font-black tracking-widest uppercase ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'PRO ATIVO' : 'FREE'}</span>
-              </div>
-            </div>
-          </button>
         </div>
       </aside>
 
@@ -410,11 +411,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           </div>
           <button onClick={() => setShowProfile(true)} className="flex items-center gap-3 group">
             <div className="text-right flex flex-col items-end">
-              <p className="text-[12px] font-black text-slate-900 uppercase leading-none flex items-center gap-1">
+              <p className="text-[14px] font-black text-slate-900 uppercase leading-none flex items-center gap-1">
                 {userProfile?.full_name?.split(' ')[0]}
-                {isPro && <Crown size={12} className="text-violet-600 fill-violet-600" />}
+                {isPro && <Crown size={12} className="text-violet-600 fill-violet-600 ml-[7px] w-[12px] h-[12px]" />}
               </p>
-              <p className={`text-[9px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</p>
+              <p className={`text-[11px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</p>
             </div>
             <div className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : 'bg-white border-slate-200 text-slate-600'}`}>
               <User size={16} />
@@ -517,12 +518,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
            )}
         </div>
 
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-3 pb-[33px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-           <MobileTab label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<LayoutDashboard size={22}/>} />
-           <MobileTab label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} icon={<Users size={22}/>} />
-           <MobileTab label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} icon={<FileText size={22}/>} />
-           <MobileTab label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => setActiveTab('settled')} icon={<History size={22}/>} />
-           <MobileTab label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} icon={<AlertCircle size={22}/>} hasBadge={overdueContracts.length > 0} className="p-0 mx-0 mt-0" />
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-3 pb-[38px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+           <MobileTab label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<LayoutDashboard size={26}/>} />
+           <MobileTab label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} icon={<Users size={26}/>} />
+           <MobileTab label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} icon={<FileText size={26}/>} />
+           <MobileTab label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => setActiveTab('settled')} icon={<History size={26}/>} />
+           <MobileTab label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} icon={<AlertCircle size={26}/>} hasBadge={overdueContracts.length > 0} className="p-0 mx-0 mt-0" />
         </nav>
       </main>
 
@@ -555,7 +556,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 const SidebarItem = ({ icon, label, active, onClick }: any) => (
   <button onClick={onClick} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-[8px] font-black tracking-wider uppercase ${active ? 'bg-slate-100 text-violet-600 shadow-sm border border-slate-200' : 'hover:bg-slate-50 hover:text-slate-900 text-slate-500'}`}>
     {icon}
-    <span>{label}</span>
+    <span className="text-xs">{label}</span>
   </button>
 );
 
@@ -565,7 +566,7 @@ const MobileTab = ({ icon, label, active, onClick, hasBadge, className = "" }: a
       {icon}
       {hasBadge && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></div>}
     </div>
-    <span className={`text-[7px] font-black tracking-widest uppercase transition-opacity ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
+    <span className={`text-[9px] font-black tracking-widest uppercase transition-opacity ${active ? 'opacity-100' : 'opacity-60'}`}>{label}</span>
   </button>
 );
 
