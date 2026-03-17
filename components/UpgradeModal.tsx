@@ -182,10 +182,11 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   return (
     <div className="fixed inset-0 bg-white z-50 uppercase overflow-y-auto pt-safe-native">
       <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl">✕</button>
-        
+        {!isPaid && (
+          <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl">✕</button>
+        )}
         {isPaid ? (
-          <div className="text-center py-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full max-w-md">
+          <div className="text-center py-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full max-w-md relative">
             <div className="w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner shadow-emerald-500/10 ring-8 ring-emerald-500/10">
               <CheckCircle2 size={48} className="animate-bounce" />
             </div>
@@ -197,9 +198,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
           </div>
         ) : step === 'plans' ? (
           <div className="w-full max-w-6xl flex flex-col items-center">
-            <div className="text-center pt-12 md:pt-16 mb-8">
-              <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
-              <p className="text-slate-500 font-bold mt-1 text-[10px] md:text-sm tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
+            <div className="text-center mb-8 md:mb-12">
+              <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
+              <p className="text-slate-500 font-bold mt-3 text-[10px] md:text-sm tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full">
@@ -276,32 +277,37 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
           </div>
         ) : step === 'form' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="flex items-center justify-between">
-              <button onClick={() => setStep('plans')} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200">
-                <ArrowLeft size={20} />
-              </button>
+            <div className="flex items-center justify-center mb-6">
               <h2 className="text-xl font-black text-slate-900 tracking-tight">DADOS DE PAGAMENTO</h2>
-              <div className="w-9"></div>
             </div>
 
-            <form onSubmit={handleCreateQR} className="space-y-4 max-w-md mx-auto">
-              <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center mb-6">
+            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto">
+              <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center">
                 <p className="text-[10px] font-bold text-violet-600 tracking-widest">PLANO SELECIONADO</p>
                 <p className="text-lg font-black text-violet-900 mt-1">{selectedPlan?.label} - R$ {selectedPlan?.amount.toFixed(2).replace('.', ',')}</p>
               </div>
               
-              <div className="space-y-3">
-                <input className="w-full px-5 py-3.5 glass-input border-none rounded-2xl font-bold text-slate-900 uppercase placeholder:text-slate-400 focus:bg-slate-50 transition-all text-[11px]" placeholder="SEU NOME COMPLETO" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required />
-                <input className="w-full px-5 py-3.5 glass-input border-none rounded-2xl font-bold text-slate-900 uppercase placeholder:text-slate-400 focus:bg-slate-50 transition-all text-[11px]" placeholder="E-MAIL" type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required />
-                <input className="w-full px-5 py-3.5 glass-input border-none rounded-2xl font-bold text-slate-900 uppercase placeholder:text-slate-400 focus:bg-slate-50 transition-all text-[11px]" placeholder="CPF" value={form.taxId} onChange={(e) => setForm({...form, taxId: e.target.value})} required />
+              <div className="space-y-3 px-2">
+                <div className="flex items-center gap-2 text-[13px] font-black text-slate-900">
+                  <span className="text-slate-500">NOME:</span>
+                  <input className="flex-1 bg-transparent border-none outline-none uppercase placeholder:text-slate-300" placeholder="SEU NOME COMPLETO" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required />
+                </div>
+                <div className="flex items-center gap-2 text-[13px] font-black text-slate-900">
+                  <span className="text-slate-500">E-MAIL:</span>
+                  <input className="flex-1 bg-transparent border-none outline-none lowercase placeholder:text-slate-300" placeholder="SEU E-MAIL" type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required />
+                </div>
+                <div className="flex items-center gap-2 text-[13px] font-black text-slate-900">
+                  <span className="text-slate-500">CPF:</span>
+                  <input className="flex-1 bg-transparent border-none outline-none uppercase placeholder:text-slate-300" placeholder="000.000.000-00" value={form.taxId} onChange={(e) => setForm({...form, taxId: e.target.value})} required />
+                </div>
               </div>
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full primary-gradient text-white py-4 rounded-2xl font-black text-[11px] tracking-widest shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition active:scale-95 disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
+                className="w-full primary-gradient text-white py-4 rounded-2xl font-black text-[11px] tracking-widest shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <RefreshCw className="animate-spin" size={18} /> : <QrCode size={18} />}
-                {loading ? 'COMUNICANDO COM O BANCO...' : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
+                {loading ? 'PREPARANDO...' : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
               </button>
             </form>
           </div>
@@ -346,6 +352,18 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                 >
                   {checking ? <RefreshCw className="animate-spin" size={16} /> : null}
                   JÁ EFETUEI O PAGAMENTO
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('pending_payment');
+                    setPaymentData(null);
+                    setStep('plans');
+                    alert('PIX CANCELADO');
+                  }}
+                  className="w-full bg-slate-100 text-slate-500 py-3 rounded-2xl font-black text-[11px] tracking-widest hover:bg-rose-100 hover:text-rose-600 transition active:scale-95"
+                >
+                  CANCELAR PIX
                 </button>
                 
                 {paymentErrorMsg && (

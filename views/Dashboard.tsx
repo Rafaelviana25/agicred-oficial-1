@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabase';
 import { UserProfile, Client, Contract } from '../types';
 import { scheduleContractNotifications } from '../services/localNotifications';
@@ -9,6 +10,7 @@ import {
   FileText, 
   Plus, 
   AlertCircle,
+  AlertTriangle,
   LayoutDashboard,
   LogOut,
   User,
@@ -115,19 +117,11 @@ const DatePickerPopup = ({ selectedDate, onDateSelect, onClose }: { selectedDate
 };
 
 const OverdueNotification = ({ count, onClick, onClose }: { count: number, onClick: () => void, onClose: () => void }) => {
-  const [isLeaving, setIsLeaving] = useState(false);
   const [width, setWidth] = useState(100);
 
   useEffect(() => {
-    // Start the progress bar animation after a tiny delay to ensure CSS transition triggers
-    const widthTimer = setTimeout(() => {
-      setWidth(0);
-    }, 50);
-
-    const timer = setTimeout(() => {
-      setIsLeaving(true);
-      setTimeout(onClose, 500); // Wait for slide up animation
-    }, 5000);
+    const widthTimer = setTimeout(() => setWidth(0), 50);
+    const timer = setTimeout(onClose, 5000);
 
     return () => {
       clearTimeout(widthTimer);
@@ -135,44 +129,57 @@ const OverdueNotification = ({ count, onClick, onClose }: { count: number, onCli
     };
   }, [onClose]);
 
-  const handleClose = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setIsLeaving(true);
-    setTimeout(onClose, 500);
-  };
-
-  const handleClick = () => {
-    setIsLeaving(true);
-    setTimeout(onClick, 500);
-  };
-
   return (
-    <div className={`fixed toast-safe left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-sm transition-all duration-500 ease-in-out ${isLeaving ? '-translate-y-[150%] opacity-0' : 'translate-y-0 opacity-100 animate-in slide-in-from-top-10 fade-in'}`}>
-      <div className="bg-rose-600 text-white p-4 rounded-2xl shadow-2xl flex items-start gap-3 border border-rose-500 relative overflow-hidden cursor-pointer" onClick={handleClick}>
-        <div className="bg-white/20 p-2 rounded-full shrink-0 z-10">
-          <AlertCircle size={24} className="text-white" />
+    <motion.div 
+      initial={{ y: -100, x: '-50%', opacity: 0 }}
+      animate={{ y: 0, x: '-50%', opacity: 1 }}
+      exit={{ y: -100, x: '-50%', opacity: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+      className="fixed toast-safe left-1/2 z-[9999] w-[92%] max-w-sm"
+    >
+      <div 
+        className="relative group cursor-pointer overflow-hidden rounded-3xl shadow-2xl border border-rose-400/30 bg-rose-600 p-5 flex items-center gap-4 active:scale-95 transition-transform"
+        onClick={onClick}
+      >
+        {/* Background Glow */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
+        
+        <div className="relative flex items-center justify-center w-12 h-12 shrink-0">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <AlertTriangle size={36} className="text-white" strokeWidth={2.5} />
+          </motion.div>
         </div>
-        <div className="flex-1 pt-0.5 z-10">
-          <h4 className="font-black text-sm uppercase tracking-tight leading-none mb-1">Contratos Vencidos!</h4>
-          <p className="text-xs font-medium text-rose-100 leading-snug">
-            Você tem {count} contrato{count > 1 ? 's' : ''} com parcelas em atraso. Toque para verificar.
+
+        <div className="flex-1 min-w-0">
+          <h4 className="text-white font-black text-sm uppercase tracking-tight leading-none mb-1">
+            ATENÇÃO!!!
+          </h4>
+          <p className="text-rose-100 text-[11px] font-bold leading-tight">
+            EXISTE <span className="text-white">{count} CONTRATOS VENCIDOS</span>, CLIQUE PARA VISUALIZAR.
           </p>
         </div>
-        <button onClick={handleClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors shrink-0 z-10">
-          <X size={16} className="text-white" />
+
+        <button 
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="relative w-8 h-8 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 text-white transition-colors"
+        >
+          <X size={18} />
         </button>
-        {/* Timer Bar */}
-        <div className="absolute bottom-0 left-0 h-1.5 bg-rose-800 w-full">
-          <div 
-            className="h-full bg-white" 
-            style={{ 
-              width: `${width}%`, 
-              transition: 'width 5s linear' 
-            }} 
+
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 h-1.5 bg-rose-900/40 w-full">
+          <motion.div 
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 5, ease: 'linear' }}
+            className="h-full bg-white"
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -337,20 +344,22 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 
   return (
     <div className="flex h-full overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
-      {showOverdueNotification && (
-        <OverdueNotification 
-          count={overdueContracts.length} 
-          onClick={() => {
-            setActiveTab('overdue');
-            setShowOverdueNotification(false);
-            setDismissedNotification(true);
-          }}
-          onClose={() => {
-            setShowOverdueNotification(false);
-            setDismissedNotification(true);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {showOverdueNotification && (
+          <OverdueNotification 
+            count={overdueContracts.length} 
+            onClick={() => {
+              setActiveTab('overdue');
+              setShowOverdueNotification(false);
+              setDismissedNotification(true);
+            }}
+            onClose={() => {
+              setShowOverdueNotification(false);
+              setDismissedNotification(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
       <aside className="w-56 xl:w-64 glass-panel border-r border-slate-200 hidden lg:flex flex-col text-slate-500 z-50">
         <div className="p-6 xl:p-8 flex flex-col gap-1">
           <AgicredLogo textClassName="text-xl xl:text-2xl text-slate-900" />
@@ -570,7 +579,98 @@ const MobileTab = ({ icon, label, active, onClick, hasBadge, className = "" }: a
   </button>
 );
 
+const SummaryModal = ({ category, contracts, clients, onClose }: any) => {
+  if (!category) return null;
+
+  let title = '';
+  let colorClass = '';
+  let data: { clientName: string, value: number }[] = [];
+
+  const clientTotals: Record<string, number> = {};
+
+  contracts.forEach((c: any) => {
+    const clientId = c.client_id;
+    let value = 0;
+
+    switch (category) {
+      case 'loaned':
+        value = Number(c.capital) || 0;
+        break;
+      case 'capitalToReceive':
+        value = (Number(c.capital) || 0) - (c.status === 'paid' ? (Number(c.capital) || 0) : 0);
+        break;
+      case 'interestReceived':
+        value = c.status === 'paid' ? (Number(c.total_interest) || 0) : (Number(c.paid_amount) || 0);
+        break;
+      case 'interestToReceive':
+        value = (Number(c.total_interest) || 0) - (c.status === 'paid' ? (Number(c.total_interest) || 0) : (Number(c.paid_amount) || 0));
+        break;
+    }
+
+    if (value > 0) {
+      clientTotals[clientId] = (clientTotals[clientId] || 0) + value;
+    }
+  });
+
+  data = Object.entries(clientTotals).map(([clientId, value]) => {
+    const client = clients.find((cl: any) => cl.id === clientId);
+    return {
+      clientName: client?.full_name || 'CLIENTE DESCONHECIDO',
+      value
+    };
+  }).sort((a, b) => b.value - a.value);
+
+  switch (category) {
+    case 'loaned':
+      title = 'CAPITAL EMPRESTADO';
+      colorClass = 'text-rose-600';
+      break;
+    case 'capitalToReceive':
+      title = 'CAPITAL A RECEBER';
+      colorClass = 'text-blue-600';
+      break;
+    case 'interestReceived':
+      title = 'JUROS JÁ RECEBIDOS';
+      colorClass = 'text-emerald-600';
+      break;
+    case 'interestToReceive':
+      title = 'JUROS A RECEBER';
+      colorClass = 'text-violet-600';
+      break;
+  }
+
+  const total = data.reduce((acc, item) => acc + item.value, 0);
+
+  return (
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900">
+      <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white flex flex-col">
+        <div className="flex justify-between items-center mb-2 px-1">
+           <h3 className={`text-sm font-black uppercase tracking-tighter ${colorClass}`}>{title}</h3>
+           <button onClick={onClose} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-rose-600 transition-all active:scale-90"><X size={18}/></button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {data.length > 0 ? data.map((item, idx) => (
+            <div key={idx} className="glass-panel p-3 rounded-xl border border-slate-200 flex justify-between items-center bg-slate-50">
+               <span className="text-[10px] font-black text-slate-700 truncate pr-2">{item.clientName}</span>
+               <span className={`text-[12px] font-black shrink-0 ${colorClass}`}>R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+          )) : (
+            <div className="p-6 text-center"><p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">NENHUM REGISTRO</p></div>
+          )}
+        </div>
+
+        <div className="pt-4 border-t border-slate-200 flex justify-between items-center px-1 mt-auto">
+           <span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">TOTAL</span>
+           <span className={`text-[16px] font-black tracking-tighter ${colorClass}`}>R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddContract, onSelectContract }: any) => {
+  const [selectedSummaryCategory, setSelectedSummaryCategory] = useState<'loaned' | 'capitalToReceive' | 'interestReceived' | 'interestToReceive' | null>(null);
   const now = new Date();
   const currentMonthIdx = now.getMonth();
   const currentYear = now.getFullYear();
@@ -652,36 +752,44 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
 
   return (
     <div className="animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-12">
+      {selectedSummaryCategory && (
+        <SummaryModal 
+          category={selectedSummaryCategory} 
+          contracts={contracts} 
+          clients={clients} 
+          onClose={() => setSelectedSummaryCategory(null)} 
+        />
+      )}
       <div className="px-3 pt-6 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4 h-[146.938px] w-[351.016px] pb-0 mt-[-17px]">
-          <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-rose-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[19px] mt-[-9px]">CAPITAL EMPRESTADO</p>
-            <h4 className="text-[16px] font-black text-rose-500 tracking-tight leading-none truncate">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4">
+          <div onClick={() => setSelectedSummaryCategory('loaned')} className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-rose-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm cursor-pointer active:scale-95">
+            <p className="text-slate-500 text-[9px] lg:text-[10px] font-black tracking-widest uppercase mb-2 -mt-1 truncate">CAPITAL EMPRESTADO</p>
+            <h4 className="text-[16px] md:text-[20px] lg:text-[26px] font-black text-rose-500 tracking-tight leading-none truncate">
               R$ {totalLoaned.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
-          <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-blue-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[18px] mt-[-9px]">CAPITAL A RECEBER</p>
-            <h4 className="text-[16px] font-black text-blue-500 tracking-tight leading-none truncate">
+          <div onClick={() => setSelectedSummaryCategory('capitalToReceive')} className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-blue-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm cursor-pointer active:scale-95">
+            <p className="text-slate-500 text-[9px] lg:text-[10px] font-black tracking-widest uppercase mb-2 -mt-1 truncate">CAPITAL A RECEBER</p>
+            <h4 className="text-[16px] md:text-[20px] lg:text-[26px] font-black text-blue-500 tracking-tight leading-none truncate">
               R$ {totalToReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
-          <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-emerald-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[24px] mt-[-9px] w-[135.02px]">JUROS JÁ RECEBIDOS</p>
-            <h4 className="text-[16px] font-black text-emerald-500 tracking-tight leading-none truncate">
+          <div onClick={() => setSelectedSummaryCategory('interestReceived')} className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-emerald-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm cursor-pointer active:scale-95">
+            <p className="text-slate-500 text-[9px] lg:text-[10px] font-black tracking-widest uppercase mb-2 -mt-1 truncate">JUROS JÁ RECEBIDOS</p>
+            <h4 className="text-[16px] md:text-[20px] lg:text-[26px] font-black text-emerald-500 tracking-tight leading-none truncate">
               R$ {totalInterestReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
-          <div className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-violet-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm">
-            <p className="text-slate-500 text-[9px] font-black tracking-widest uppercase mb-1 truncate h-[21.9922px] mt-[-9px] w-[135.02px]">JUROS A RECEBER</p>
-            <h4 className="text-[16px] font-black text-violet-500 tracking-tight leading-none truncate">
+          <div onClick={() => setSelectedSummaryCategory('interestToReceive')} className="glass-panel pt-3 pb-5 px-4 rounded-2xl border-2 border-violet-500 transition-all hover:bg-slate-50 flex flex-col justify-center text-center shadow-sm cursor-pointer active:scale-95">
+            <p className="text-slate-500 text-[9px] lg:text-[10px] font-black tracking-widest uppercase mb-2 -mt-1 truncate">JUROS A RECEBER</p>
+            <h4 className="text-[16px] md:text-[20px] lg:text-[26px] font-black text-violet-500 tracking-tight leading-none truncate">
               R$ {totalInterestToReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h4>
           </div>
         </div>
       </div>
 
-      <div className="pt-[32px] pb-[15px] px-6 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
+      <div className="py-8 px-6 grid grid-cols-2 gap-8 max-w-2xl mx-auto">
         <div className="text-center space-y-2 -mt-[20px] mx-0">
           <p className="text-slate-500 text-[10px] lg:text-xs font-black tracking-[0.2em] uppercase">PAGOS ESTE MÊS</p>
           <h2 className="text-2xl lg:text-4xl font-black text-emerald-500 tracking-tighter flex items-center justify-center">
@@ -699,11 +807,11 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
       </div>
 
       <div className="px-5 space-y-6 max-w-7xl mx-auto pb-24">
-        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 max-w-2xl mx-auto mt-0 mb-[-7px] h-[50.9805px] w-[335px] p-0">
-          <button onClick={onAddContract} className="primary-gradient text-white py-[16px] px-0 m-0 rounded-full flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:shadow-violet-500/25">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <button onClick={onAddContract} className="primary-gradient text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:shadow-violet-500/25">
             <Plus size={18} /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CONTRATO</span>
           </button>
-          <button onClick={onAddClient} className="bg-emerald-500 text-white py-[16px] px-0 m-0 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all hover:bg-emerald-600">
+          <button onClick={onAddClient} className="bg-emerald-500 text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all hover:bg-emerald-600">
             <Users size={18} className="text-white" /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CLIENTE</span>
           </button>
         </div>
@@ -763,8 +871,8 @@ const ContractListItem: React.FC<{ c: any; clientName?: string; onSelect: (c: an
          <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-black uppercase tracking-widest">
             <CalendarIcon size={9}/> {displayDate ? displayDate.toLocaleDateString('pt-BR') : new Date(c.end_date + 'T12:00:00').toLocaleDateString()}
          </div>
-         <span className={`text-[10px] font-black group-hover:underline ${isPaid ? 'text-slate-500' : 'text-violet-600'}`}>
-            {isPaid ? 'PAGO' : 'VER DETALHES'}
+         <span className={`text-[10px] font-black group-hover:underline ${isPaid ? 'text-black' : 'text-violet-600'}`}>
+            {isPaid ? 'LIQUIDADO' : 'VER DETALHES'}
          </span>
       </div>
     </div>
@@ -773,7 +881,7 @@ const ContractListItem: React.FC<{ c: any; clientName?: string; onSelect: (c: an
 
 const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSearchChange }: any) => (
   <div className="space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900">
-    <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm flex items-center justify-between gap-4 px-[14px] mt-[-37px] mb-0 pt-[6px] pb-[9px] mx-0">
+    <div className="bg-slate-50/95 backdrop-blur-sm flex items-center justify-between gap-4 px-5 mt-[-9px] mb-0 pt-[6px] pb-[9px] mx-0">
       <div className="flex items-center gap-4 flex-1">
         <div className="flex flex-col shrink-0">
           <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">CLIENTES CADASTRADOS</h3>
@@ -830,7 +938,7 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
 
 const SettledSection = ({ settledContracts, clients, onSelectContract }: any) => (
   <div className="space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
-    <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
+    <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
       <h3 className="text-[11px] lg:text-sm font-black text-emerald-600 uppercase tracking-tighter">LIQUIDADOS</h3>
       <span className="text-[9px] lg:text-xs text-emerald-600 font-black tracking-widest">{settledContracts.length} TÍTULOS</span>
     </div>
@@ -909,9 +1017,9 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
 
   return (
     <div className="space-y-3 animate-in fade-in duration-500 uppercase font-black pb-10 text-slate-900">
-      <div className="glass-panel rounded-3xl shadow-sm sticky top-0 z-10 mx-auto w-full mt-[-32px] pt-[7px] pb-[7px] pr-[14px] pl-[14px] border-[#efefef] bg-white">
+      <div className="glass-panel pt-3.5 px-3.5 pb-[9px] rounded-3xl shadow-sm mx-auto w-full mt-[-25px]">
         <div className="flex items-center justify-between mb-4 px-1">
-          <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">LISTAGEM DE TÍTULOS</h3>
+          <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tighter">LISTAGEM DE TÍTULOS</h3>
           <div className="flex items-center gap-2 bg-slate-100 px-2.5 py-1 rounded-xl">
              <button onClick={() => setCurrentYear(currentYear - 1)} className="p-0.5 hover:bg-slate-200 rounded transition-all text-slate-500 hover:text-slate-900"><ChevronLeft size={14} /></button>
              <span className="text-[12px] font-black text-slate-900 tracking-widest min-w-[32px] text-center">{currentYear}</span>
@@ -919,7 +1027,7 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
           </div>
         </div>
         
-        <div className="flex items-center justify-between gap-1 overflow-hidden mr-0 ml-[-14px] pr-[1px] mt-0 mb-0 w-[346.539px] h-[45.9961px] pb-0 pt-0 pl-[3px]">
+        <div className="flex items-center justify-between gap-1 w-full overflow-hidden h-[43px] pr-[1px]">
           {monthsAbbr.map((m, idx) => (
             <button 
               key={m}
@@ -931,11 +1039,54 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
           ))}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center px-1">
-          <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">VALORES TOTAIS DO MÊS</span>
-          <span className="text-[12px] font-black text-slate-900 tracking-tighter">
-            R$ {filteredContractsWithInfo.reduce((acc: number, c: any) => acc + (Number(c.monthly_interest) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
+        <div className="mt-[6px] pt-3 border-t border-slate-200 flex flex-col gap-2 px-1">
+          {(() => {
+            let totalMesAReceber = 0;
+            let parcelasRecebidas = 0;
+            let capitalRecebido = 0;
+
+            filteredContractsWithInfo.forEach((c: any) => {
+              const monthlyInterest = Number(c.monthly_interest) || 0;
+              totalMesAReceber += monthlyInterest;
+
+              if (c.status === 'paid' || c.isThisInstallmentPaid) {
+                parcelasRecebidas += monthlyInterest;
+              }
+
+              const paidAmt = Number(c.paid_amount) || 0;
+              const totalInt = Number(c.total_interest) || 0;
+              capitalRecebido += Math.max(0, paidAmt - totalInt);
+            });
+
+            const totalMesRecebido = parcelasRecebidas + capitalRecebido;
+
+            return (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">TOTAL DO MÊS A RECEBER</span>
+                  <span className="text-[12px] font-black text-slate-900 tracking-tighter">
+                    R$ {totalMesAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] text-emerald-600 font-black tracking-widest uppercase">TOTAL DO MÊS RECEBIDO</span>
+                  <span className="text-[12px] font-black text-emerald-600 tracking-tighter mb-[-6px]">
+                    R$ {totalMesRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end mt-1 space-y-1">
+                   <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase">PARCELAS</span>
+                      <span className="text-[11px] font-black text-slate-700 w-[75px] text-right">R$ {parcelasRecebidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase">CAPITAL</span>
+                      <span className="text-[11px] font-black text-slate-700 w-[75px] text-right mb-0">R$ {capitalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                   </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
 
@@ -974,10 +1125,10 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
 };
 
 const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus }: any) => (
-  <div className="space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
-     <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
-        <h4 className="text-[11px] lg:text-sm font-black text-rose-600 uppercase tracking-tighter leading-none px-1">INADIMPLENTES</h4>
-        <span className="text-[9px] lg:text-xs text-rose-600 font-black tracking-widest">{contracts.length} TÍTULOS</span>
+  <div className="mt-[7px] space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
+     <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
+        <h4 className="text-[12px] lg:text-sm font-black text-rose-600 uppercase tracking-tighter leading-[11px] pl-[5px]">INADIMPLENTES</h4>
+        <span className="text-[10px] lg:text-xs text-rose-600 font-black tracking-widest leading-[11px] pl-[2px]">{contracts.length} TÍTULOS</span>
      </div>
      
      {contracts.length === 0 ? (
@@ -1125,14 +1276,25 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
               <div className="bg-slate-50 rounded-2xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
                 {contracts.length > 0 ? contracts.map(c => (
                   <div key={c.id} onClick={() => onSelectContract(c)} className="p-3.5 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group">
-                    <div className="space-y-1">
+                    <div className={`space-y-1 ${c.status === 'paid' ? 'line-through opacity-60' : ''}`}>
                       <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest -mt-0.5 pb-[1px]">CAPITAL: R$ {c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest pb-[1px]">JUROS: R$ {c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <p className="text-[10px] text-[#6608ff] font-black uppercase tracking-widest">TOTAL DO CONTRATO: R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">DATA DE CRIAÇÃO: {new Date(c.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
-                    <div className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest ${c.status === 'active' ? 'bg-emerald-100 text-emerald-600' : c.status === 'overdue' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'}`}>
-                      {c.status === 'active' ? 'ATIVO' : c.status === 'paid' ? 'LIQUIDADO' : c.status.toUpperCase()}
+                    <div className="flex flex-col gap-1 items-end">
+                      {c.status === 'overdue' && (
+                        <div className="bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest">
+                          ATIVO
+                        </div>
+                      )}
+                      <div className={`px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest ${
+                        c.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 
+                        c.status === 'overdue' ? 'bg-rose-100 text-rose-600' : 
+                        'bg-slate-200 text-black'
+                      }`}>
+                        {c.status === 'active' ? 'ATIVO' : c.status === 'paid' ? 'LIQUIDADO' : 'VENCIDO'}
+                      </div>
                     </div>
                   </div>
                 )) : (
@@ -1486,7 +1648,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           <div className="flex-1 overflow-hidden">
              <div className="flex items-center gap-1.5 mb-1.5 text-emerald-600">
                 <FileCheck size={14} />
-                <p className="text-[8px] font-black tracking-[0.3em] uppercase">TÍTULO # {contract.id.slice(0, 8)}</p>
+                <p className="text-[7px] font-black tracking-[0.3em] uppercase">TÍTULO # {contract.id.slice(0, 8)}</p>
              </div>
              <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight truncate">{client?.full_name}</h2>
           </div>
@@ -1537,34 +1699,34 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           </div>
         ) : (
           <>
-            <div className="glass-panel p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group bg-white mt-[9px] mb-[-4px] pb-[13px]">
+            <div className="glass-panel p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group bg-white">
                <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-900"><Coins size={40}/></div>
-               <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.3em] mt-[-12px] mb-[3px]">MONTANTE TOTAL DO CONTRATO</p>
+               <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.3em] mb-2 -mt-2">MONTANTE TOTAL DO CONTRATO</p>
                <div className="flex items-baseline gap-1.5">
-                  <span className="text-emerald-600 text-xs font-black">R$</span>
-                  <span className="text-2xl font-black text-slate-900 tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-emerald-600 text-sm font-black">R$</span>
+                  <span className="text-3xl font-black text-slate-900 tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200">
-                  <span className="text-[9px] font-black text-emerald-600 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
+               <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
+                  <span className="text-[9px] font-black text-slate-600 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
                </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-               <div className="glass-panel p-3 rounded-2xl border border-violet-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+               <div className="glass-panel p-3 rounded-2xl border border-violet-200 flex flex-col items-center text-center shadow-sm bg-white">
                   <span className="text-[10px] text-violet-500 font-black tracking-widest mb-1 uppercase">CAPITAL BASE</span>
-                  <span className="text-[14px] font-black text-violet-600 uppercase">R$ {contract.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[16px] font-black text-violet-600 uppercase">R$ {contract.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-rose-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+               <div className="glass-panel p-3 rounded-2xl border border-rose-200 flex flex-col items-center text-center shadow-sm bg-white">
                   <span className="text-[10px] text-rose-500 font-black tracking-widest mb-1 uppercase">TOTAL JUROS</span>
-                  <span className="text-[14px] font-black text-rose-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[16px] font-black text-rose-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-emerald-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+               <div className="glass-panel p-3 rounded-2xl border border-emerald-200 flex flex-col items-center text-center shadow-sm bg-white">
                   <span className="text-[10px] text-emerald-600 font-black tracking-widest mb-1 uppercase">VALOR JÁ PAGO</span>
-                  <span className="text-[14px] font-black text-emerald-600 uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[16px] font-black text-emerald-600 uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-blue-200 flex flex-col items-center justify-center text-center shadow-sm bg-white">
+               <div className="glass-panel p-3 rounded-2xl border border-blue-200 flex flex-col items-center text-center shadow-sm bg-white">
                   <span className="text-[10px] text-blue-500 font-black tracking-widest mb-1 uppercase">SALDO RESTANTE</span>
-                  <span className="text-[14px] font-black text-blue-600 uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[16px] font-black text-blue-600 uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
             </div>
 
@@ -1587,12 +1749,12 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                      const canToggle = (isNextToPay && contract.status !== 'paid') || isLastPaid;
 
                      return (
-                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-slate-100 border-slate-200' : 'glass-panel border-slate-200 shadow-sm bg-white'}`}>
+                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-slate-200 border-slate-300' : 'bg-white border-slate-200 shadow-sm'}`}>
                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{i + 1}</div>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-900'}`}>{i + 1}</div>
                               <div>
                                  <p className="text-[12px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
-                                 <p className="text-[10px] text-rose-500 font-black uppercase mt-[6px] mb-[-3px] ml-[-1px] tracking-widest">VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
+                                 <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${isPaid ? 'text-slate-500' : 'text-rose-500'}`}>VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
                                  {isPaid && (
                                     editingPaymentDate?.index === i ? (
                                         <div onClick={e => e.stopPropagation()} className="mt-1 flex items-center gap-1">
@@ -1604,7 +1766,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                                     if (e.key === 'Enter') updatePaymentDate(i, editingPaymentDate.date);
                                                     if (e.key === 'Escape') setEditingPaymentDate(null);
                                                 }}
-                                                className="text-[10px] font-black bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-600 outline-none w-24 shadow-sm"
+                                                className="text-[8px] font-black bg-white border border-violet-200 rounded px-1 py-0.5 text-violet-600 outline-none w-24 shadow-sm"
                                                 autoFocus
                                             />
                                             <button onClick={() => updatePaymentDate(i, editingPaymentDate.date)} className="w-5 h-5 bg-emerald-100 text-emerald-600 rounded flex items-center justify-center hover:bg-emerald-200 transition-colors">
@@ -1616,9 +1778,9 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                         </div>
                                     ) : (
                                         <div onClick={(e) => { e.stopPropagation(); setEditingPaymentDate({ index: i, date: contract.payment_history?.[i] || new Date().toISOString().split('T')[0] }) }} className="cursor-pointer hover:bg-slate-50 rounded px-1 -ml-1 transition-colors group/date w-fit">
-                                            <p className="text-[10px] text-emerald-800 font-black uppercase mt-1.5 tracking-widest flex items-center gap-1">
+                                            <p className="text-[10px] text-emerald-600 font-black uppercase mt-1.5 tracking-widest flex items-center gap-1">
                                                 PAGO {contract.payment_history?.[i] ? new Date(contract.payment_history[i] + 'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')} 
-                                                <Edit2 size={8} className="opacity-0 group-hover/date:opacity-50 transition-opacity"/>
+                                                <Edit2 size={10} className="opacity-0 group-hover/date:opacity-50 transition-opacity"/>
                                             </p>
                                         </div>
                                     )
@@ -1627,8 +1789,8 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                            </div>
                            <div className="flex items-center gap-3">
                               <p className={`text-[11px] font-black ${isPaid ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              <button onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} disabled={!canToggle || updating} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'text-emerald-600 bg-emerald-100 border border-emerald-200 shadow-sm' : canToggle ? 'bg-slate-100 text-emerald-600 shadow-sm hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}>
-                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? <RefreshCw className="animate-spin" size={12}/> : isPaid ? <CheckCircle size={14} className="text-emerald-600"/> : <Banknote size={14}/>}
+                              <button onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} disabled={!canToggle || updating} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'bg-violet-600 text-white shadow-md' : canToggle ? 'bg-slate-50 text-emerald-600 border border-slate-100 shadow-sm hover:bg-slate-100' : 'text-slate-300 cursor-not-allowed'}`}>
+                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? <RefreshCw className="animate-spin" size={12}/> : isPaid ? <CheckCircle size={14}/> : <Coins size={14}/>}
                               </button>
                            </div>
                         </div>
@@ -1819,10 +1981,10 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
         </div>
         <form onSubmit={handleSubmit} className="space-y-4 font-black">
            <div className="space-y-1">
-             <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase">CLIENTE</label>
+             <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase">CLIENTE</label>
              <select 
                required 
-               className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-black text-[11px] appearance-none" 
+               className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-black text-[10px] appearance-none" 
                onChange={e => setForm({...form, client_id: e.target.value})}
                value={form.client_id}
              >
@@ -1851,16 +2013,16 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
                  <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" />
               </div>
               <div className="flex-1 space-y-1 relative" ref={dateRef}>
-                <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE INÍCIO</label>
-                <div onClick={() => { setShowDatePicker(!showDatePicker); setShowDueDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[11px] cursor-pointer flex items-center justify-between shadow-inner">
+                <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE INÍCIO</label>
+                <div onClick={() => { setShowDatePicker(!showDatePicker); setShowDueDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[10px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
                   <CalendarIcon size={14} className="text-violet-600 ml-[9px] mr-[-12px]" />
                 </div>
                 {showDatePicker && <DatePickerPopup selectedDate={form.start_date} onDateSelect={(d) => setForm({...form, start_date: d})} onClose={() => setShowDatePicker(false)} />}
               </div>
               <div className="flex-1 space-y-1 relative" ref={dueDateRef}>
-                <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE VENCIMENTO</label>
-                <div onClick={() => { setShowDueDatePicker(!showDueDatePicker); setShowDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[11px] cursor-pointer flex items-center justify-between shadow-inner">
+                <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE VENCIMENTO</label>
+                <div onClick={() => { setShowDueDatePicker(!showDueDatePicker); setShowDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[10px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}
                   <CalendarIcon size={14} className="text-violet-600 ml-[9px] mr-[-12px]" />
                 </div>
@@ -1881,7 +2043,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
                       return (
                          <div key={i} className="flex items-center justify-between p-2.5 glass-panel rounded-xl border border-slate-200 shadow-sm transition-all hover:border-violet-500/30 bg-white">
                             <div className="flex items-center gap-2.5">
-                               <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 border border-slate-200">{i + 1}</div>
+                               <div className="w-7 h-7 rounded-lg bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-900 border border-slate-300">{i + 1}</div>
                                <div>
                                   <p className="text-[9px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
                                   <p className="text-[8px] text-violet-600 font-black uppercase mt-0.5 tracking-widest">
@@ -1916,12 +2078,12 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
 
 const InputWrapper = ({ label, type = "text", value, onChange, placeholder, step, inputMode }: any) => (
   <div className="space-y-1 text-slate-900">
-    <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">{label}</label>
+    <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">{label}</label>
     <input 
       type={type} 
       step={step} 
       inputMode={inputMode}
-      className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-slate-900 text-[11px] uppercase shadow-inner placeholder:text-slate-400 transition-all focus:bg-white focus:border-violet-500" 
+      className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-slate-900 text-[10px] uppercase shadow-inner placeholder:text-slate-400 transition-all focus:bg-white focus:border-violet-500" 
       placeholder={placeholder} 
       value={value} 
       onChange={e => onChange(e.target.value)} 
@@ -2420,11 +2582,11 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
-                    <div className="flex justify-center mt-2">
+                    <div className="flex justify-start mt-2">
                       <button 
                         type="button" 
                         onClick={onUpgradeRequest}
-                        className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px] mr-[30px] ml-[-13px]"
+                        className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
                       >
                         Renovação de Plano
                       </button>
@@ -2440,10 +2602,29 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           </div>
           <button type="button" onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
         </div>
-        <div className="mt-2 pb-[10px] px-6 pt-[13px] bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-inner text-slate-900">
-           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">E-MAIL</span><span className="text-[12px] font-black text-slate-900 lowercase">{user.email}</span></div>
-           <div className="flex justify-between py-1 border-b border-slate-200"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CPF</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.cpf}</span></div>
-           <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 font-black tracking-widest uppercase">CONTATO</span><span className="text-[12px] font-black text-slate-900 uppercase">{user.phone}</span></div>
+        <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-2">
+          <div className="flex flex-col">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">E-mail</p>
+            <p className="text-[12px] font-bold text-slate-900 truncate lowercase">{user.email}</p>
+          </div>
+
+          <div className="h-px bg-slate-50 w-full" />
+
+          <div className="flex flex-col">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CPF</p>
+            <p className="text-[12px] font-bold text-slate-900">
+              {user.cpf.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
+            </p>
+          </div>
+
+          <div className="h-px bg-slate-50 w-full" />
+
+          <div className="flex flex-col">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Contatos</p>
+            <p className="text-[12px] font-bold text-slate-900">
+              {user.phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+            </p>
+          </div>
         </div>
         {!user.is_pro && <button type="button" onClick={onUpgradeRequest} className="w-full primary-gradient text-white py-4 rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:shadow-violet-500/25 transition-all flex items-center justify-center gap-2 active:scale-95"><Crown size={18}/> ATIVAR PRO</button>}
         <div className="space-y-2">
