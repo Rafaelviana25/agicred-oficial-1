@@ -2816,10 +2816,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
-            <h3 className="text-[18px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
+            <h3 className="text-[20px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
               {user.full_name}
-              {user.display_id && <span className="text-black ml-2 font-bold text-[10px]">ID:{user.display_id}</span>}
             </h3>
+            {user.display_id && (
+              <span className="text-black font-bold text-[13px] mt-0.5">
+                ID: {user.display_id}
+              </span>
+            )}
             {user.is_pro ? (
               <div className="flex flex-col">
                 <span className="text-violet-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
@@ -2868,7 +2872,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           <div className="h-px bg-slate-50 w-full" />
 
           <div className="flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Contatos</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CONTATO</p>
             <p className="text-[12px] font-bold text-slate-900">
               {user.phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
             </p>
