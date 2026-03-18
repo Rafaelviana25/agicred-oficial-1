@@ -21,6 +21,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   });
   const [paymentData, setPaymentData] = useState<{ id: string, qr_code: string, qr_code_base64: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('PREPARANDO...');
   const [checking, setChecking] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [paymentErrorMsg, setPaymentErrorMsg] = useState<string | null>(null);
@@ -58,10 +59,31 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     }
   }, []);
 
+  useEffect(() => {
+    // Wake up the backend if it's on a free tier like Render
+    const apiUrl = (import.meta as any).env.VITE_API_URL || '';
+    fetch(`${apiUrl}/api/health`).catch(() => {});
+  }, []);
+
   const handleSelectPlan = (plan: any) => {
     setSelectedPlan(plan);
     setStep('form');
   };
+
+  useEffect(() => {
+    let interval: any;
+    if (loading) {
+      setLoadingMessage('PREPARANDO...');
+      let seconds = 0;
+      interval = setInterval(() => {
+        seconds += 1;
+        if (seconds === 4) setLoadingMessage('ESTAMOS QUASE LÁ...');
+        if (seconds === 8) setLoadingMessage('QUASE PRONTO...');
+        if (seconds === 12) setLoadingMessage('SÓ MAIS UM POUCO...');
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleCreateQR = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,11 +92,11 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     setLoading(true);
     try {
       const apiUrl = (import.meta as any).env.VITE_API_URL || '';
-      if (!apiUrl) {
-        alert("Erro: URL da API não configurada. O aplicativo não consegue se comunicar com o servidor.");
-        setLoading(false);
-        return;
-      }
+      
+      // Use AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
       const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
         headers: {
@@ -86,9 +108,11 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
           name: form.name,
           taxId: form.taxId,
           amount: selectedPlan.amount
-        })
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (data.id) {
@@ -183,7 +207,15 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     <div className="fixed inset-0 bg-white z-[120] uppercase overflow-y-auto pt-safe-native">
       <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
         {!isPaid && (
-          <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl">✕</button>
+          <button 
+            onClick={() => {
+              if (step === 'plans') onClose();
+              else setStep('plans');
+            }} 
+            className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl"
+          >
+            ✕
+          </button>
         )}
         {isPaid ? (
           <div className="text-center py-20 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 w-full max-w-md relative">
@@ -278,10 +310,10 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
         ) : step === 'form' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center justify-center mb-6">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">DADOS DE PAGAMENTO</h2>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight" style={{ marginTop: '10px' }}>DADOS DE PAGAMENTO</h2>
             </div>
 
-            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto">
+            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto" style={{ marginTop: '32px', height: '256.632px', width: '319.156px' }}>
               <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center">
                 <p className="text-[10px] font-bold text-violet-600 tracking-widest">PLANO SELECIONADO</p>
                 <p className="text-lg font-black text-violet-900 mt-1">{selectedPlan?.label} - R$ {selectedPlan?.amount.toFixed(2).replace('.', ',')}</p>
@@ -307,21 +339,21 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                 className="w-full primary-gradient text-white py-4 rounded-2xl font-black text-[11px] tracking-widest shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <RefreshCw className="animate-spin" size={18} /> : <QrCode size={18} />}
-                {loading ? 'PREPARANDO...' : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
+                {loading ? loadingMessage : `GERAR PIX DE R$ ${selectedPlan?.amount.toFixed(2).replace('.', ',')}`}
               </button>
             </form>
           </div>
         ) : (
           <div className="text-center space-y-5 max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
             <div className="flex items-center justify-between mb-2">
-              <button onClick={() => setStep('form')} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200">
+              <button onClick={() => setStep('plans')} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200">
                 <ArrowLeft size={16} />
               </button>
               <div className="w-8"></div>
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-xl font-black text-slate-900">ESCANEIE O PIX</h2>
+              <h2 className="text-xl font-black text-slate-900" style={{ marginTop: '10px' }}>ESCANEIE O PIX</h2>
               <p className="text-slate-500 font-medium text-[10px] tracking-widest uppercase">ESCANEIE O QR CODE ABAIXO COM O APP DO SEU BANCO.</p>
             </div>
 

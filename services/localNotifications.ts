@@ -75,23 +75,66 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
   // PRO Expiry Notification
   if (proExpiresAt) {
     const expiryDate = new Date(proExpiresAt);
-    const oneDayBefore = new Date(expiryDate);
-    oneDayBefore.setDate(expiryDate.getDate() - 1);
-    oneDayBefore.setHours(hours, minutes, 0, 0);
-
-    if (oneDayBefore.getTime() > baseDate.getTime()) {
+    
+    // 3 days before at 09:00
+    const threeDaysBefore = new Date(expiryDate);
+    threeDaysBefore.setDate(expiryDate.getDate() - 3);
+    threeDaysBefore.setHours(9, 0, 0, 0);
+    if (threeDaysBefore.getTime() > baseDate.getTime()) {
       notificationsToSchedule.push({
         title: 'Renovação de Plano',
-        body: 'ATENÇÃO! Falta 1 dia para finalizar seu plano PRO, Faça a renovação',
-        id: 5000,
+        body: 'ATENÇÃO! FALTAM 3 DIAS PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+        id: 5003,
         channelId: channelId,
+        smallIcon: 'ic_stat_notification',
         schedule: { 
-          at: oneDayBefore,
+          at: threeDaysBefore,
           allowWhileIdle: true
         },
         ...(hasSound ? { sound: 'default' } : {}),
       });
     }
+
+    // 2 days before at 09:00
+    const twoDaysBefore = new Date(expiryDate);
+    twoDaysBefore.setDate(expiryDate.getDate() - 2);
+    twoDaysBefore.setHours(9, 0, 0, 0);
+    if (twoDaysBefore.getTime() > baseDate.getTime()) {
+      notificationsToSchedule.push({
+        title: 'Renovação de Plano',
+        body: 'ATENÇÃO! FALTAM 2 DIAS PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+        id: 5002,
+        channelId: channelId,
+        smallIcon: 'ic_stat_notification',
+        schedule: { 
+          at: twoDaysBefore,
+          allowWhileIdle: true
+        },
+        ...(hasSound ? { sound: 'default' } : {}),
+      });
+    }
+
+    // 1 day before at 08:00, 15:00, 21:00
+    const oneDayTimes = [8, 15, 21];
+    oneDayTimes.forEach((h, idx) => {
+      const oneDayBefore = new Date(expiryDate);
+      oneDayBefore.setDate(expiryDate.getDate() - 1);
+      oneDayBefore.setHours(h, 0, 0, 0);
+      if (oneDayBefore.getTime() > baseDate.getTime()) {
+        notificationsToSchedule.push({
+          title: 'Renovação de Plano',
+          body: 'ATENÇÃO! FALTA 1 DIA PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+          id: 5010 + idx,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: oneDayBefore,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+        });
+      }
+    });
   }
 
   contracts.forEach(c => {
@@ -139,6 +182,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           body: `O contrato de ${clientName} está vencido.`,
           id: 1000 + idCounter++,
           channelId: channelId,
+          smallIcon: 'ic_stat_notification',
           schedule: { 
             at: exactTime,
             every: 'day',
@@ -156,6 +200,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           body: `O contrato de ${clientName} vence hoje.`,
           id: 1000 + idCounter++,
           channelId: channelId,
+          smallIcon: 'ic_stat_notification',
           schedule: { 
             at: exactTime,
             allowWhileIdle: true
@@ -172,6 +217,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           body: `O contrato de ${clientName} está vencido.`,
           id: 1000 + idCounter++,
           channelId: channelId,
+          smallIcon: 'ic_stat_notification',
           schedule: { 
             at: exactTime,
             every: 'day',
@@ -198,6 +244,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
           body: `O contrato de ${clientName} vence em breve.`,
           id: 1000 + idCounter++,
           channelId: channelId,
+          smallIcon: 'ic_stat_notification',
           schedule: { 
             at: exactTime,
             allowWhileIdle: true
@@ -240,6 +287,7 @@ export const sendTestNotification = async () => {
             title: 'Teste de Notificação',
             body: 'Se você está vendo isso, as notificações estão funcionando!',
             id: 999,
+            smallIcon: 'ic_stat_notification',
             schedule: { at: testTime, allowWhileIdle: true }
           }
         ]

@@ -321,6 +321,12 @@ const checkAndSendOverdueNotifications = async () => {
       // Use a unique idempotency key to potentially speed up processing and prevent duplicates
       const idempotencyKey = `pay_${userId}_${Date.now()}`;
 
+      console.time(`mp_create_payment_${userId}`);
+      
+      // Use AbortController for timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout for MP call
+
       // Use direct fetch for faster execution and less overhead than the SDK
       const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
         method: 'POST',
@@ -329,9 +335,13 @@ const checkAndSendOverdueNotifications = async () => {
           'Content-Type': 'application/json',
           'X-Idempotency-Key': idempotencyKey
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+      console.timeEnd(`mp_create_payment_${userId}`);
+      
       const response = await mpResponse.json();
       
       console.log(`Payment created for user ${userId}, status: ${response.status}`);
