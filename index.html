@@ -107,6 +107,18 @@
             -moz-appearance: textfield;
         }
 
+        .blue-gradient {
+            background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .animate-slow-fade {
+            animation: slow-fade 3s ease-in-out infinite;
+        }
+        @keyframes slow-fade {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
     </style>
 </head>
 <body class="overflow-x-hidden">

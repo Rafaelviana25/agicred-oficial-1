@@ -907,18 +907,18 @@ const ContractListItem: React.FC<{ c: any; clientName?: string; onSelect: (c: an
 
 const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSearchChange }: any) => (
   <div className="space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900">
-    <div className="bg-slate-50/95 backdrop-blur-sm flex items-center justify-between gap-4 px-5 mt-[-9px] mb-0 pt-[6px] pb-[9px] mx-0">
+    <div className="bg-slate-50/95 backdrop-blur-sm flex items-center justify-between gap-4 px-0 mt-[-9px] mb-0 pt-[6px] pb-[9px] mx-0">
       <div className="flex items-center gap-4 flex-1">
         <div className="flex flex-col shrink-0">
           <h3 className="text-[13px] font-black text-slate-900 uppercase tracking-tighter">CLIENTES CADASTRADOS</h3>
           <span className="text-[9px] text-violet-600 font-black tracking-widest uppercase">{clients.length} CLIENTES</span>
         </div>
         
-        <div className="relative flex-1 max-w-xs">
+        <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text"
-            placeholder="PESQUISAR..."
+            placeholder=""
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-9 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none focus:border-violet-500 transition-all"
@@ -2024,10 +2024,24 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                  )}
                               </div>
                            </div>
-                           <div className="flex items-center gap-3">
-                              <p className={`text-[11px] font-black ${isPaid ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              <button onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} disabled={!canToggle || updating} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPaid ? 'bg-violet-600 text-white shadow-md' : canToggle ? 'bg-slate-50 text-emerald-600 border border-slate-100 shadow-sm hover:bg-slate-100' : 'text-slate-300 cursor-not-allowed'}`}>
-                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? <RefreshCw className="animate-spin" size={12}/> : isPaid ? <CheckCircle size={14}/> : <Coins size={14}/>}
+                           <div className="flex flex-col items-end gap-1.5 shrink-0">
+                              <p className={`text-[13px] font-black ${isPaid ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} 
+                                disabled={!canToggle || updating} 
+                                className={`h-8 px-5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${
+                                  isPaid 
+                                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                                    : canToggle 
+                                      ? 'bg-rose-500 text-white hover:bg-rose-600' 
+                                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                }`}
+                              >
+                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? (
+                                   <RefreshCw className="animate-spin" size={12}/>
+                                 ) : (
+                                   isPaid ? 'PAGO' : 'DEVE'
+                                 )}
                               </button>
                            </div>
                         </div>
@@ -2802,9 +2816,9 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-start">
           <div className="flex flex-col text-slate-900">
-            <h3 className="text-[13px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
+            <h3 className="text-[18px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
               {user.full_name}
-              {user.display_id && <span className="text-slate-400 ml-2 font-bold text-[10px]">ID:{user.display_id}</span>}
+              {user.display_id && <span className="text-black ml-2 font-bold text-[10px]">ID:{user.display_id}</span>}
             </h3>
             {user.is_pro ? (
               <div className="flex flex-col">
