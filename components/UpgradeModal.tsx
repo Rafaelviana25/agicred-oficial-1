@@ -180,7 +180,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   }, [step, isPaid, expiresIn]);
 
   return (
-    <div className="fixed inset-0 bg-white z-50 uppercase overflow-y-auto pt-safe-native">
+    <div className="fixed inset-0 bg-white z-[120] uppercase overflow-y-auto pt-safe-native">
       <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
         {!isPaid && (
           <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl">✕</button>

@@ -184,7 +184,28 @@ const OverdueNotification = ({ count, onClick, onClose }: { count: number, onCli
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return ['overview', 'clients', 'contracts', 'overdue', 'settled'].includes(hash) ? hash as any : 'overview';
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['overview', 'clients', 'contracts', 'overdue', 'settled'].includes(hash)) {
+        setActiveTab(hash as any);
+      } else if (!hash) {
+        setActiveTab('overview');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleTabChange = (tab: 'overview' | 'clients' | 'contracts' | 'overdue' | 'settled') => {
+    window.location.hash = tab;
+    setActiveTab(tab);
+  };
   const [showBackup, setShowBackup] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -267,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
     if (monthlyValue <= 0) return null;
 
     const totalPaid = Number(c.paid_amount || 0);
-    const installmentsFullyPaid = Math.floor(totalPaid / monthlyValue);
+    const installmentsFullyPaid = Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyValue * 100));
     
     if (installmentsFullyPaid >= c.months) return null;
 
@@ -349,7 +370,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           <OverdueNotification 
             count={overdueContracts.length} 
             onClick={() => {
-              setActiveTab('overdue');
+              handleTabChange('overdue');
               setShowOverdueNotification(false);
               setDismissedNotification(true);
             }}
@@ -365,11 +386,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           <AgicredLogo textClassName="text-xl xl:text-2xl text-slate-900" />
         </div>
         <nav className="flex-1 px-[15px] pt-[7px] pb-[15px] -mt-[19px] -ml-[1px] mr-[1px] -mb-[8px] space-y-1 xl:space-y-2">
-          <SidebarItem icon={<LayoutDashboard size={20} />} label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-          <SidebarItem icon={<Users size={20} />} label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} />
-          <SidebarItem icon={<AlertCircle size={20} />} label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} />
-          <SidebarItem icon={<FileText size={20} />} label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} />
-          <SidebarItem icon={<History size={20} />} label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => setActiveTab('settled')} />
+          <SidebarItem icon={<LayoutDashboard size={20} />} label="INICIO" active={activeTab === 'overview'} onClick={() => handleTabChange('overview')} />
+          <SidebarItem icon={<Users size={20} />} label="CLIENTES" active={activeTab === 'clients'} onClick={() => handleTabChange('clients')} />
+          <SidebarItem icon={<AlertCircle size={20} />} label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => handleTabChange('overdue')} />
+          <SidebarItem icon={<FileText size={20} />} label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => handleTabChange('contracts')} />
+          <SidebarItem icon={<History size={20} />} label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => handleTabChange('settled')} />
           
           <button 
             onClick={handleOpenContractModal}
@@ -437,7 +458,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
              <OverviewView 
                contracts={contracts} 
                clients={clients} 
-               setActiveTab={setActiveTab} 
+               handleTabChange={handleTabChange} 
                onAddClient={() => {
                  if (canAddClient) {
                    setShowClientModal(true);
@@ -528,11 +549,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         </div>
 
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around px-2 py-3 pb-[38px] z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-           <MobileTab label="INICIO" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<LayoutDashboard size={26}/>} />
-           <MobileTab label="CLIENTES" active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} icon={<Users size={26}/>} />
-           <MobileTab label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => setActiveTab('contracts')} icon={<FileText size={26}/>} />
-           <MobileTab label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => setActiveTab('settled')} icon={<History size={26}/>} />
-           <MobileTab label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => setActiveTab('overdue')} icon={<AlertCircle size={26}/>} hasBadge={overdueContracts.length > 0} className="p-0 mx-0 mt-0" />
+           <MobileTab label="INICIO" active={activeTab === 'overview'} onClick={() => handleTabChange('overview')} icon={<LayoutDashboard size={26}/>} />
+           <MobileTab label="CLIENTES" active={activeTab === 'clients'} onClick={() => handleTabChange('clients')} icon={<Users size={26}/>} />
+           <MobileTab label="CONTRATOS" active={activeTab === 'contracts'} onClick={() => handleTabChange('contracts')} icon={<FileText size={26}/>} />
+           <MobileTab label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => handleTabChange('settled')} icon={<History size={26}/>} />
+           <MobileTab label="VENCIDOS" active={activeTab === 'overdue'} onClick={() => handleTabChange('overdue')} icon={<AlertCircle size={26}/>} hasBadge={overdueContracts.length > 0} className="p-0 mx-0 mt-0" />
         </nav>
       </main>
 
@@ -546,16 +567,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           onSuccess={fetchData} 
           onSelectContract={(c: Contract) => {
             setSelectedContract(c);
-            setSelectedClient(null);
           }}
           onAddContract={(clientId: string) => {
-            setSelectedClient(null);
             handleOpenContractModal(clientId);
           }}
         />
       )}
       {selectedContract && <ContractDetailsModal contract={selectedContract} client={clients.find(c => c.id === selectedContract.client_id)} onClose={() => setSelectedContract(null)} onSuccess={fetchData} />}
-      {showProfile && userProfile && <UserProfileModal user={userProfile} contracts={contracts} clients={clients} onClose={() => setShowProfile(false)} onUpgradeRequest={() => { setShowProfile(false); setShowUpgrade(true); }} onBackupRequest={() => { setShowProfile(false); setShowBackup(true); }} onRefresh={onUpgradeSuccess} />}
+      {showProfile && userProfile && <UserProfileModal user={userProfile} contracts={contracts} clients={clients} onClose={() => setShowProfile(false)} onUpgradeRequest={() => { setShowUpgrade(true); }} onBackupRequest={() => { setShowBackup(true); }} onRefresh={onUpgradeSuccess} />}
       {showUpgrade && userProfile && <UpgradeModal user={userProfile} onClose={() => setShowUpgrade(false)} onSuccess={() => { fetchData(); onUpgradeSuccess(); }} />}
       {showBackup && userProfile && <BackupModal userId={userProfile.id} onClose={() => setShowBackup(false)} />}
     </div>
@@ -669,7 +688,7 @@ const SummaryModal = ({ category, contracts, clients, onClose }: any) => {
   );
 };
 
-const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddContract, onSelectContract }: any) => {
+const OverviewView = ({ contracts, clients, handleTabChange, onAddClient, onAddContract, onSelectContract }: any) => {
   const [selectedSummaryCategory, setSelectedSummaryCategory] = useState<'loaned' | 'capitalToReceive' | 'interestReceived' | 'interestToReceive' | null>(null);
   const now = new Date();
   const currentMonthIdx = now.getMonth();
@@ -831,7 +850,7 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
                 <div className="py-12 text-center"><p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">SEM VENDAS PARA ESTE MÊS</p></div>
               )}
             </div>
-            <button onClick={() => setActiveTab('contracts')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER TODAS AS VENDAS</button>
+            <button onClick={() => handleTabChange('contracts')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER TODAS AS VENDAS</button>
           </div>
 
           <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-200">
@@ -848,7 +867,7 @@ const OverviewView = ({ contracts, clients, setActiveTab, onAddClient, onAddCont
                 <div className="py-12 text-center"><p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">NENHUM RECEBIMENTO ESTE MÊS</p></div>
               )}
             </div>
-            <button onClick={() => setActiveTab('settled')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER HISTÓRICO DE PAGOS</button>
+            <button onClick={() => handleTabChange('settled')} className="w-full bg-slate-50 pt-[10px] pb-[16px] -mb-[9px] mt-0 ml-0 mr-0 text-slate-600 font-black text-[10px] lg:text-xs uppercase tracking-[0.2em] border-t border-slate-200 hover:bg-slate-100 transition-colors">VER HISTÓRICO DE PAGOS</button>
           </div>
         </div>
       </div>
@@ -1327,13 +1346,18 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     localStorage.setItem(`contract_notes_${contract.id}`, newNotes);
   };
   
+  const firstDueDate = new Date(contract.end_date + 'T12:00:00');
+  if (contract.months > 1) {
+    firstDueDate.setMonth(firstDueDate.getMonth() - (contract.months - 1));
+  }
+
   const [editForm, setEditForm] = useState({ 
     capital: contract.capital, 
     interest_rate: contract.interest_rate, 
     interest_amount: '',
     months: contract.months, 
     start_date: contract.start_date,
-    due_date: contract.end_date
+    due_date: firstDueDate.toISOString().split('T')[0]
   });
 
   const updatePaymentDate = async (index: number, newDate: string) => {
@@ -1448,7 +1472,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     };
 
     if (isFullyPaid) {
-      updates.end_date = new Date().toISOString().split('T')[0];
+      // Do not change end_date to preserve installment due dates
     }
 
     // First update the critical fields (amount, status)
@@ -1506,8 +1530,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     setUpdating(true);
     const { error } = await supabase.from('contracts').update({ 
       status: 'paid',
-      paid_amount: Number(contract.total_amount),
-      end_date: new Date().toISOString().split('T')[0]
+      paid_amount: Number(contract.total_amount)
     }).eq('id', contract.id);
     setUpdating(false);
     if (!error) { onSuccess(); onClose(); }
@@ -1647,8 +1670,8 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
         <div className="flex justify-between items-start border-b border-slate-200 pb-4">
           <div className="flex-1 overflow-hidden">
              <div className="flex items-center gap-1.5 mb-1.5 text-emerald-600">
-                <FileCheck size={14} />
-                <p className="text-[7px] font-black tracking-[0.3em] uppercase">TÍTULO # {contract.id.slice(0, 8)}</p>
+                <FileCheck size={16} />
+                <p className="text-[10px] font-black tracking-[0.2em] uppercase">TÍTULO ID: #{contract.id.slice(0, 8)}</p>
              </div>
              <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight truncate">{client?.full_name}</h2>
           </div>
@@ -1707,7 +1730,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                   <span className="text-3xl font-black text-slate-900 tracking-tighter">{contract.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
                <div className="mt-3 inline-flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
-                  <span className="text-[9px] font-black text-slate-600 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
+                  <span className="text-[9px] font-black text-violet-600 tracking-widest uppercase">TAXA: {contract.interest_rate}% A.M.</span>
                </div>
             </div>
 
@@ -1818,12 +1841,9 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
               <button 
                 onClick={async () => {
                   setUpdating(true);
-                  const originalEndDate = new Date(contract.start_date + 'T12:00:00');
-                  originalEndDate.setMonth(originalEndDate.getMonth() + Number(contract.months));
                   const { error } = await supabase.from('contracts').update({ 
                     status: 'active',
-                    paid_amount: 0,
-                    end_date: originalEndDate.toISOString().split('T')[0]
+                    paid_amount: 0
                   }).eq('id', contract.id);
                   setUpdating(false);
                   if (!error) { onSuccess(); onClose(); }
@@ -1973,7 +1993,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
   };
 
   return (
-    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
+    <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[120] overflow-y-auto uppercase font-bold text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
         <div className="flex justify-between items-center px-1">
            <div><h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">NOVA OPERAÇÃO</h2><p className="text-[9px] text-violet-600 font-black tracking-[0.2em] mt-1 uppercase">EMISSÃO DE TÍTULO</p></div>
@@ -2291,7 +2311,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
         const installments = [];
         const monthlyVal = Number(c.monthly_interest);
         const paidTotal = Number(c.paid_amount || 0);
-        const paidInstallmentsCount = Math.floor(paidTotal / monthlyVal);
+        const paidInstallmentsCount = Math.floor(Math.round(paidTotal * 100) / Math.round(monthlyVal * 100));
         
         const firstDueDate = new Date(c.end_date + 'T12:00:00');
         if (c.months > 1) firstDueDate.setMonth(firstDueDate.getMonth() - (c.months - 1));

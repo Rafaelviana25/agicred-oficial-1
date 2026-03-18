@@ -184,7 +184,7 @@ function isContractOverdue(c: any) {
   if (monthlyValue <= 0) return false;
 
   const totalPaid = Number(c.paid_amount || 0);
-  const installmentsFullyPaid = Math.floor(totalPaid / monthlyValue);
+  const installmentsFullyPaid = Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyValue * 100));
   
   if (installmentsFullyPaid >= c.months) return false;
 
