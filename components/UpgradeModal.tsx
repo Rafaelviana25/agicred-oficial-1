@@ -232,20 +232,20 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
                   </div>
 
                   <ul className="space-y-1 mb-3 flex-grow border-t border-slate-100 pt-2">
-                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO ILIMITADO
+                    <li className="flex items-center text-[7px] md:text-[9px] lg:text-sm font-black text-slate-500 uppercase tracking-tight">
+                      <Check className="w-2 h-2 lg:w-4 lg:h-4 text-emerald-500 mr-1 lg:mr-2 flex-shrink-0" /> ACESSO ILIMITADO
                     </li>
-                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> NOTIFICAÇÕES
+                    <li className="flex items-center text-[7px] md:text-[9px] lg:text-sm font-black text-slate-500 uppercase tracking-tight">
+                      <Check className="w-2 h-2 lg:w-4 lg:h-4 text-emerald-500 mr-1 lg:mr-2 flex-shrink-0" /> NOTIFICAÇÕES
                     </li>
-                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> BACKUP
+                    <li className="flex items-center text-[7px] md:text-[9px] lg:text-sm font-black text-slate-500 uppercase tracking-tight">
+                      <Check className="w-2 h-2 lg:w-4 lg:h-4 text-emerald-500 mr-1 lg:mr-2 flex-shrink-0" /> BACKUP
                     </li>
-                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> RELATORIOS
+                    <li className="flex items-center text-[7px] md:text-[9px] lg:text-sm font-black text-slate-500 uppercase tracking-tight">
+                      <Check className="w-2 h-2 lg:w-4 lg:h-4 text-emerald-500 mr-1 lg:mr-2 flex-shrink-0" /> RELATORIOS
                     </li>
-                    <li className="flex items-center text-[7px] md:text-[9px] font-black text-slate-500 uppercase tracking-tight">
-                      <Check className="w-2 h-2 text-emerald-500 mr-1 flex-shrink-0" /> ACESSO AO COMPUTADOR WEB
+                    <li className="flex items-center text-[7px] md:text-[9px] lg:text-sm font-black text-slate-500 uppercase tracking-tight">
+                      <Check className="w-2 h-2 lg:w-4 lg:h-4 text-emerald-500 mr-1 lg:mr-2 flex-shrink-0" /> ACESSO AO COMPUTADOR WEB
                     </li>
                   </ul>
 

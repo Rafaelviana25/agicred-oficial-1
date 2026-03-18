@@ -53,7 +53,9 @@ import {
   Smartphone,
   Search,
   Mail,
-  Settings
+  Settings,
+  Globe,
+  Filter
 } from 'lucide-react';
 
 import { AgicredLogo } from '../components/AgicredLogo';
@@ -955,14 +957,119 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
   </div>
 );
 
-const SettledSection = ({ settledContracts, clients, onSelectContract }: any) => (
+const SettledSection = ({ settledContracts, clients, onSelectContract }: any) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState('date-desc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const sortOptions = [
+    { value: 'date-desc', label: 'DATA MAIS RECENTE' },
+    { value: 'date-asc', label: 'DATA MAIS ANTIGA' },
+    { value: 'name-asc', label: 'NOME (A-Z)' },
+    { value: 'name-desc', label: 'NOME (Z-A)' },
+    { value: 'value-desc', label: 'VALOR MAIOR' },
+    { value: 'value-asc', label: 'VALOR MENOR' },
+  ];
+
+  const filteredAndSortedContracts = [...settledContracts]
+    .filter((c: any) => {
+      const client = clients.find((cl: any) => cl.id === c.client_id);
+      const searchLower = searchTerm.toLowerCase();
+      const clientName = client?.full_name?.toLowerCase() || '';
+      const amountStr = c.total_amount.toString();
+      const dateStr = new Date(c.end_date + 'T12:00:00').toLocaleDateString();
+      
+      return clientName.includes(searchLower) || amountStr.includes(searchLower) || dateStr.includes(searchLower);
+    })
+    .sort((a: any, b: any) => {
+      const clientA = clients.find((cl: any) => cl.id === a.client_id)?.full_name || '';
+      const clientB = clients.find((cl: any) => cl.id === b.client_id)?.full_name || '';
+      
+      switch (sortOption) {
+        case 'name-asc': return clientA.localeCompare(clientB);
+        case 'name-desc': return clientB.localeCompare(clientA);
+        case 'date-desc': return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+        case 'date-asc': return new Date(a.end_date).getTime() - new Date(b.end_date).getTime();
+        case 'value-desc': return b.total_amount - a.total_amount;
+        case 'value-asc': return a.total_amount - b.total_amount;
+        default: return 0;
+      }
+    });
+
+  return (
   <div className="space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
-    <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
-      <h3 className="text-[11px] lg:text-sm font-black text-emerald-600 uppercase tracking-tighter">LIQUIDADOS</h3>
-      <span className="text-[9px] lg:text-xs text-emerald-600 font-black tracking-widest">{settledContracts.length} TÍTULOS</span>
+    <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center pl-[-2px] pr-[5px] mb-[7px] mr-[2px] ml-[-2px] pb-0 mt-[-28px] h-6">
+      <h3 className="text-[12px] lg:text-sm font-black text-emerald-600 uppercase tracking-tighter leading-[11px] pl-[5px]">LIQUIDADOS</h3>
+      <span className="text-[10px] lg:text-xs text-emerald-600 font-black tracking-widest leading-[11px] pl-[2px]">{settledContracts.length} TÍTULOS</span>
     </div>
+
+    <div className="flex flex-row gap-2 mb-0 mt-[7px] pr-[4px] pl-0 h-[34px]">
+      <div className="relative w-[43px] h-[35px] mt-[-1px] mb-0 ml-0 flex items-center justify-center bg-white border border-slate-200 rounded-xl shrink-0" ref={filterRef}>
+        <button 
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className="w-full h-full flex items-center justify-center text-slate-400 hover:text-emerald-600 transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+        </button>
+        
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-full left-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] overflow-hidden"
+            >
+              <div className="py-1">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortOption(option.value);
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                      sortOption === option.value 
+                        ? 'bg-emerald-50 text-emerald-600' 
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="relative flex-1">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-slate-400" />
+        </div>
+        <input
+          type="text"
+          placeholder=""
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all uppercase tracking-widest"
+        />
+      </div>
+    </div>
+
     <div className="flex flex-col gap-1.5 lg:gap-3">
-      {settledContracts.map((c: any) => {
+      {filteredAndSortedContracts.map((c: any) => {
         const client = clients.find((cl: any) => cl.id === c.client_id);
         return (
           <div 
@@ -994,6 +1101,7 @@ const SettledSection = ({ settledContracts, clients, onSelectContract }: any) =>
     </div>
   </div>
 );
+};
 
 const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, setCurrentMonth, currentYear, setCurrentYear }: any) => {
   const monthsAbbr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
@@ -1143,12 +1251,112 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
   );
 };
 
-const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus }: any) => (
-  <div className="mt-[7px] space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
-     <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center px-1 mb-1 lg:mb-2 py-2 mt-[-32px]">
+const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus }: any) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState('name-asc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const sortOptions = [
+    { value: 'name-asc', label: 'NOME (A-Z)' },
+    { value: 'name-desc', label: 'NOME (Z-A)' },
+    { value: 'value-desc', label: 'VALOR MAIOR' },
+    { value: 'value-asc', label: 'VALOR MENOR' },
+  ];
+
+  const filteredAndSortedContracts = [...contracts]
+    .filter((c: any) => {
+      const client = clients.find((cl: any) => cl.id === c.client_id);
+      const searchLower = searchTerm.toLowerCase();
+      const clientName = client?.full_name?.toLowerCase() || '';
+      const amountStr = c.total_amount.toString();
+      const dateStr = new Date(c.start_date + 'T12:00:00').toLocaleDateString();
+      
+      return clientName.includes(searchLower) || amountStr.includes(searchLower) || dateStr.includes(searchLower);
+    })
+    .sort((a: any, b: any) => {
+      const clientA = clients.find((cl: any) => cl.id === a.client_id)?.full_name || '';
+      const clientB = clients.find((cl: any) => cl.id === b.client_id)?.full_name || '';
+      
+      switch (sortOption) {
+        case 'name-asc': return clientA.localeCompare(clientB);
+        case 'name-desc': return clientB.localeCompare(clientA);
+        case 'value-desc': return b.total_amount - a.total_amount;
+        case 'value-asc': return a.total_amount - b.total_amount;
+        default: return 0;
+      }
+    });
+
+  return (
+  <div className="space-y-2 lg:space-y-3 animate-in fade-in duration-500 uppercase font-black text-slate-900 pb-20 w-full">
+     <div className="bg-slate-50/95 backdrop-blur-sm flex justify-between items-center pl-[-2px] pr-[5px] mb-[7px] mr-[2px] ml-[-2px] pb-0 mt-[-28px] h-6">
         <h4 className="text-[12px] lg:text-sm font-black text-rose-600 uppercase tracking-tighter leading-[11px] pl-[5px]">INADIMPLENTES</h4>
         <span className="text-[10px] lg:text-xs text-rose-600 font-black tracking-widest leading-[11px] pl-[2px]">{contracts.length} TÍTULOS</span>
      </div>
+
+     <div className="flex flex-row gap-2 mb-0 mt-[7px] pr-[4px] pl-0 h-[34px]">
+      <div className="relative w-[43px] h-[35px] mt-[-1px] mb-0 ml-0 flex items-center justify-center bg-white border border-slate-200 rounded-xl shrink-0" ref={filterRef}>
+        <button 
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className="w-full h-full flex items-center justify-center text-slate-400 hover:text-rose-600 transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+        </button>
+        
+        <AnimatePresence>
+          {isFilterOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-full left-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] overflow-hidden"
+            >
+              <div className="py-1">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortOption(option.value);
+                      setIsFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                      sortOption === option.value 
+                        ? 'bg-rose-50 text-rose-600' 
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <div className="relative flex-1">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-4 w-4 text-slate-400" />
+        </div>
+        <input
+          type="text"
+          placeholder=""
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all uppercase tracking-widest"
+        />
+      </div>
+    </div>
      
      {contracts.length === 0 ? (
        <div className="py-20 text-center space-y-4">
@@ -1157,7 +1365,7 @@ const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus
        </div>
      ) : (
        <div className="flex flex-col gap-1.5 lg:gap-3">
-          {contracts.map((c: any) => {
+          {filteredAndSortedContracts.map((c: any) => {
             const client = clients.find((cl: any) => cl.id === c.client_id);
             const status = getOverdueStatus(c);
             
@@ -1202,6 +1410,7 @@ const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus
      )}
   </div>
 );
+};
 
 const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectContract, onAddContract }: { client: Client, contracts: Contract[], onClose: () => void, onSuccess: () => void, onSelectContract: (c: Contract) => void, onAddContract: (clientId: string) => void }) => {
   const [updating, setUpdating] = useState(false);
@@ -2766,11 +2975,19 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             <p className="text-[8px] text-rose-500 font-black tracking-widest uppercase text-center animate-in fade-in slide-in-from-top-1">ESSA FUNÇÃO É PARA VERSÃO PRO</p>
           )}
         </div>
-        <div className="flex items-center justify-center gap-1.5 text-slate-500 mt-4 mb-2">
-          <Mail className="w-3 h-3" />
-          <span className="text-[9px] font-black uppercase tracking-widest">
-            SUPORTE: <span className="lowercase font-bold text-slate-400">agicred.gestaodecredito@gmail.com</span>
-          </span>
+        <div className="flex flex-col items-center justify-center gap-2 text-slate-500 mt-4 mb-2">
+          <div className="flex items-center gap-1.5">
+            <Mail className="w-3 h-3" />
+            <span className="text-[9px] font-black uppercase tracking-widest">
+              SUPORTE: <span className="lowercase font-bold text-slate-400">agicred.gestaodecredito@gmail.com</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3 h-3" />
+            <span className="text-[9px] font-black uppercase tracking-widest">
+              ACESSO WEB: <a href="https://agicred-9wto.onrender.com" target="_blank" rel="noopener noreferrer" className="lowercase font-bold text-violet-500 hover:text-violet-600 transition-colors">https://agicred-9wto.onrender.com</a>
+            </span>
+          </div>
         </div>
         <button type="button" onClick={handleLogout} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><LogOut size={16}/> SAIR DA CONTA</button>
       </div>
