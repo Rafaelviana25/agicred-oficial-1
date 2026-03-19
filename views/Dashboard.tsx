@@ -351,7 +351,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 
   const isPro = userProfile?.is_pro && (!userProfile.pro_expires_at || new Date(userProfile.pro_expires_at) > new Date());
   
-  const getRemainingTime = (expiresAt: string) => {
+  const trialDays = 7;
+  const createdAt = userProfile?.created_at ? new Date(userProfile.created_at) : new Date();
+  const trialExpiresAt = new Date(createdAt.getTime() + trialDays * 24 * 60 * 60 * 1000);
+  const isTrial = !isPro && trialExpiresAt > new Date();
+  const hasAccess = isPro || isTrial;
+  
+  const getRemainingTime = (expiresAt: string | Date) => {
     const now = new Date();
     const expires = new Date(expiresAt);
     const diff = expires.getTime() - now.getTime();
@@ -366,8 +372,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
     return `${days} DIA${days !== 1 ? 'S' : ''}`;
   };
 
-  const clientLimit = isPro ? 999999 : 3;
-  const canAddClient = isPro || clients.length < clientLimit;
+  const clientLimit = hasAccess ? 999999 : 0;
+  const canAddClient = hasAccess || clients.length < clientLimit;
 
   return (
     <div className="flex h-full overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
@@ -415,16 +421,23 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           </button>
         </nav>
         <div className="p-4 xl:p-6 mt-auto space-y-4">
-          <div className={`px-3 py-1.5 xl:py-2.5 rounded-lg flex flex-col items-center justify-center gap-1 ${isPro ? 'bg-violet-100 text-violet-700' : 'bg-emerald-100 text-emerald-700'}`}>
+          <div className={`px-3 py-1.5 xl:py-2.5 rounded-lg flex flex-col items-center justify-center gap-1 ${isPro ? 'bg-violet-100 text-violet-700' : isTrial ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
             <div className="flex items-center gap-2">
               {isPro ? <Crown size={14} className="fill-violet-700" /> : <User size={14} />}
-              <span className="text-[10px] xl:text-xs font-black tracking-widest uppercase">{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</span>
+              <span className="text-[10px] xl:text-xs font-black tracking-widest uppercase">{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'CONTA GRÁTIS'}</span>
             </div>
             {isPro && userProfile?.pro_expires_at && (
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
                 <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                 <p className="font-black text-black">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
+              </div>
+            )}
+            {isTrial && (
+              <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-amber-200 pt-1">
+                <p>INÍCIO: {createdAt.toLocaleDateString('pt-BR')}</p>
+                <p>TÉRMINO: {trialExpiresAt.toLocaleDateString('pt-BR')}</p>
+                <p className="font-black text-black">RESTAM: {getRemainingTime(trialExpiresAt)}</p>
               </div>
             )}
           </div>
@@ -442,15 +455,15 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                 {userProfile?.full_name?.split(' ')[0]}
                 {isPro && <Crown size={12} className="text-violet-600 fill-violet-600 ml-[7px] w-[12px] h-[12px]" />}
               </p>
-              <p className={`text-[11px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : 'CONTA GRÁTIS'}</p>
+              <p className={`text-[11px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : isTrial ? 'text-amber-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'CONTA GRÁTIS'}</p>
             </div>
-            <div className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : 'bg-white border-slate-200 text-slate-600'}`}>
+            <div className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : isTrial ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-slate-200 text-slate-600'}`}>
               <User size={16} />
             </div>
           </button>
         </header>
 
-        {!isPro && activeTab === 'overview' && (
+        {!isPro && !isTrial && activeTab === 'overview' && (
           <button 
             onClick={() => setShowUpgrade(true)}
             className="w-full primary-gradient text-white py-2 flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-all z-30 relative border-b border-violet-400/20"
@@ -488,9 +501,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                           <Crown size={100} />
                         </div>
                         <div className="relative z-10">
-                          <h3 className="text-base lg:text-lg font-black tracking-tight mb-2 flex items-center gap-2"><Crown size={20} className="fill-white"/> Limite atingido</h3>
+                          <h3 className="text-base lg:text-lg font-black tracking-tight mb-2 flex items-center gap-2"><Crown size={20} className="fill-white"/> Período de teste expirado</h3>
                           <p className="text-[11px] lg:text-xs font-medium opacity-90 mb-4 leading-relaxed max-w-2xl">
-                            Você atingiu o limite de 3 clientes do plano grátis. Faça o upgrade para adicionar mais clientes e ter acesso ilimitado ao sistema Agicred.
+                            Seu período de teste grátis expirou. Faça o upgrade para continuar adicionando clientes e ter acesso ilimitado ao sistema Agicred.
                           </p>
                           <button onClick={() => setShowUpgrade(true)} className="bg-white text-violet-600 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-violet-50 transition-all active:scale-95 flex items-center gap-2">
                             Quero ser PRO <ArrowRight size={16}/>
@@ -1550,6 +1563,14 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   const [editingPaymentDate, setEditingPaymentDate] = useState<{index: number, date: string} | null>(null);
   const [notes, setNotes] = useState('');
 
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showPartialPay && modalRef.current) {
+      modalRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [showPartialPay]);
+
   useEffect(() => {
     const savedNotes = localStorage.getItem(`contract_notes_${contract.id}`);
     if (savedNotes) setNotes(savedNotes);
@@ -1797,7 +1818,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 pt-0 lg:pt-10 z-[110] overflow-y-auto uppercase font-black text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-5 lg:p-6 space-y-4 animate-in shadow-2xl relative min-h-[450px] border border-slate-200 bg-white">
         {showPartialPay && (
-          <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-y-auto no-scrollbar pb-10 text-slate-900">
+          <div className="absolute inset-x-0 top-0 bottom-0 bg-white/98 backdrop-blur-md z-[120] p-6 flex flex-col animate-in fade-in duration-300 rounded-b-3xl lg:rounded-3xl overflow-hidden pb-10 text-slate-900" ref={(el) => { if (el) el.scrollTop = 0; }}>
              <div className="flex justify-between items-center mb-6 px-1">
                 <div className="flex items-center gap-2.5 text-blue-600">
                    <Wallet size={20} />
@@ -1813,16 +1834,16 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                    </div>
                    <div className="grid grid-cols-1 gap-2">
                       <div className="flex justify-between items-center px-2 py-1.5">
-                         <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES ({remainingInstallmentsCount} PARC.)</span>
-                         <span className="text-[12px] font-black text-rose-600 tracking-tighter">R$ {remainingInterestTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES ({remainingInstallmentsCount} PARC.)</span>
+                          <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {remainingInterestTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between items-center px-[20px] pt-[10px] pb-[6px] mt-[9px] ml-[-2px] mr-0">
-                         <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">CAPITAL VIGENTE (PRINCIPAL)</span>
-                         <span className="text-[12px] font-black text-slate-900 tracking-tighter leading-[14px]">R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div className="flex justify-between items-center px-[7px] pl-[19px] pt-[2px] pb-[2px] mt-[-15px] ml-[-10px] h-[31.4805px]">
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mr-0 ml-[-2px]">CAPITAL VIGENTE (PRINCIPAL)</span>
+                          <span className="text-[11px] font-black text-slate-900 tracking-tighter">R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between items-center bg-blue-100 rounded-xl border border-blue-200 text-[16px] mt-[-2px] ml-[59px] pl-[19px] pb-[15px] pr-[22px] pt-[8px]">
-                         <span className="text-[11px] text-blue-600 font-black uppercase tracking-widest">DÍVIDA ATUAL (SOMA TOTAL)</span>
-                         <span className="text-[12px] font-black text-blue-700 tracking-tighter leading-none">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div className="flex justify-between items-center bg-blue-100 rounded-xl border border-blue-200 text-[16px] mt-[-5px] mr-[-4px] ml-[-2px] pb-[10px] pr-[7px] pl-[19px] pt-[8px]">
+                          <span className="text-[10px] text-blue-600 font-black uppercase tracking-widest mt-0 pb-0 pt-0 pr-0 pl-0 mr-0 ml-[-8px]">DÍVIDA ATUAL (SOMA TOTAL)</span>
+                          <span className="text-[12px] font-black text-blue-700 tracking-tighter">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
                    </div>
                 </div>
@@ -2397,8 +2418,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   const isPro = user.is_pro && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
 
+  const trialDays = 7;
+  const createdAt = user.created_at ? new Date(user.created_at) : new Date();
+  const trialExpiresAt = new Date(createdAt.getTime() + trialDays * 24 * 60 * 60 * 1000);
+  const isTrial = !isPro && trialExpiresAt > new Date();
+  const hasAccess = isPro || isTrial;
+
   const generateReport = async () => {
-    if (!user.is_pro) {
+    if (!hasAccess) {
       setShowProMessage(true);
       return;
     }
@@ -2811,6 +2838,28 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   const remainingTime = getRemainingProTime();
 
+  const getRemainingTrialTime = () => {
+    const now = new Date();
+    if (trialExpiresAt <= now) return 'EXPIRADO';
+
+    let months = trialExpiresAt.getMonth() - now.getMonth() + (12 * (trialExpiresAt.getFullYear() - now.getFullYear()));
+    let days = trialExpiresAt.getDate() - now.getDate();
+
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(trialExpiresAt.getFullYear(), trialExpiresAt.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+
+    const parts = [];
+    if (months > 0) parts.push(`${months} MÊS${months > 1 ? 'ES' : ''}`);
+    if (days > 0) parts.push(`${days} DIA${days > 1 ? 'S' : ''}`);
+
+    return parts.length > 0 ? parts.join(' E ') : 'MENOS DE 1 DIA';
+  };
+
+  const remainingTrialTime = getRemainingTrialTime();
+
   return (
     <div className="fixed modal-safe bg-slate-900/50 backdrop-blur-sm flex items-start lg:items-start justify-center p-0 lg:p-4 lg:pt-10 z-[100] overflow-y-auto uppercase font-bold text-slate-900">
       <div className="glass-panel rounded-b-3xl lg:rounded-3xl w-full lg:max-w-2xl p-6 lg:p-8 space-y-5 animate-in shadow-2xl border border-slate-200 bg-white">
@@ -2824,7 +2873,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 ID: {user.display_id}
               </span>
             )}
-            {user.is_pro ? (
+            {isPro ? (
               <div className="flex flex-col">
                 <span className="text-violet-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
                   VERSÃO PRO <Crown size={12} className="fill-violet-600" />
@@ -2846,10 +2895,41 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                   </div>
                 )}
               </div>
+            ) : isTrial ? (
+              <div className="flex flex-col">
+                <span className="text-amber-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
+                  TESTE GRÁTIS <User size={12} className="text-amber-600" />
+                </span>
+                <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
+                  <p>INÍCIO: {createdAt.toLocaleDateString('pt-BR')}</p>
+                  <p>TÉRMINO: {trialExpiresAt.toLocaleDateString('pt-BR')}</p>
+                  <p className="font-black text-amber-700">RESTAM: {remainingTrialTime || 'EXPIRADO'}</p>
+                  <div className="flex justify-start mt-2">
+                    <button 
+                      type="button" 
+                      onClick={onUpgradeRequest}
+                      className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
+                    >
+                      Assinar Plano Pro
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <p className="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase mt-0.5">
-                VERSÃO GRÁTIS
-              </p>
+              <div className="flex flex-col">
+                <p className="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase mt-0.5">
+                  VERSÃO GRÁTIS
+                </p>
+                <div className="flex justify-start mt-2">
+                  <button 
+                    type="button" 
+                    onClick={onUpgradeRequest}
+                    className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
+                  >
+                    Assinar Plano Pro
+                  </button>
+                </div>
+              </div>
             )}
           </div>
           <button type="button" onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
@@ -2882,8 +2962,8 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
         <div className="space-y-2">
           <button 
             type="button" 
-            onClick={isPro ? onBackupRequest : () => setShowProMessage(true)} 
-            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            onClick={hasAccess ? onBackupRequest : () => setShowProMessage(true)} 
+            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${hasAccess ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             <Database size={16}/> BACKUP DE DADOS
           </button>
@@ -2892,27 +2972,27 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             type="button" 
             onClick={generateReport} 
             disabled={generatingReport}
-            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+            className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-start px-6 gap-2 border ${hasAccess ? 'bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 active:scale-95 border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
           >
             {generatingReport ? <RefreshCw size={16} className="animate-spin"/> : <FileBarChart size={16}/>} RELATÓRIO GERAL
           </button>
           
-          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border box-border ${isPro ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'} lg:hidden`}>
+          <div className={`w-full h-[52px] rounded-full font-black text-[10px] uppercase tracking-[0.3em] transition-all flex items-center justify-between px-6 border box-border ${hasAccess ? 'bg-slate-100 text-slate-600 shadow-sm border-slate-200' : 'bg-slate-50 text-slate-400 border-slate-100'} lg:hidden`}>
             <div className="flex items-center gap-2">
               <Bell size={16}/> NOTIFICAÇÕES
             </div>
             <div className="flex items-center gap-3">
               <button 
                 type="button" 
-                disabled={!isPro || !localNotificationsEnabled}
+                disabled={!hasAccess || !localNotificationsEnabled}
                 onClick={(e) => { e.stopPropagation(); setShowNotificationSettings(!showNotificationSettings); }}
-                className={`p-1 rounded-full transition-colors ${isPro && localNotificationsEnabled ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}
+                className={`p-1 rounded-full transition-colors ${hasAccess && localNotificationsEnabled ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-200' : 'text-slate-300 cursor-not-allowed'}`}
               >
                 <Settings size={16} />
               </button>
               <button 
                 type="button"
-                onClick={isPro ? async (e) => {
+                onClick={hasAccess ? async (e) => {
                   e.stopPropagation();
                   const newState = !localNotificationsEnabled;
                   setLocalNotificationsEnabled(newState);
@@ -2928,14 +3008,14 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                     }
                   });
                 } : () => setShowProMessage(true)}
-                className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${isPro && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}
+                className={`w-8 h-4 rounded-full flex items-center p-0.5 transition-colors ${hasAccess && localNotificationsEnabled ? 'bg-violet-500' : 'bg-slate-300'}`}
               >
-                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isPro && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${hasAccess && localNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
               </button>
             </div>
           </div>
 
-          {isPro && localNotificationsEnabled && showNotificationSettings && (
+          {hasAccess && localNotificationsEnabled && showNotificationSettings && (
             <div className="flex flex-col gap-2 mt-2">
               <div className="bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-4 mt-0 ml-[24px] pt-[10px] pl-[16px] pr-[18px] pb-0 w-[263px] h-[227.594px]">
                 <div className="flex items-center justify-between">
