@@ -24,7 +24,7 @@ export const setupLocalNotifications = async () => {
   }
 };
 
-export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[], proExpiresAt?: string | null) => {
+export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[], proExpiresAt?: string | null, trialExpiresAt?: string | null) => {
   if (!Capacitor.isNativePlatform()) return;
 
   const isEnabled = localStorage.getItem('local_notifications_enabled') === 'true';
@@ -70,6 +70,33 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     } catch (e) {
       console.error("Erro ao criar canal de notificação:", e);
     }
+  }
+
+  // TRIAL Expiry Notification
+  if (trialExpiresAt && !proExpiresAt) { // Only if not PRO
+    const expiryDate = new Date(trialExpiresAt);
+    
+    // 1 day before at 09:00, 15:00, 21:00
+    const oneDayTimes = [9, 15, 21];
+    oneDayTimes.forEach((h, idx) => {
+      const oneDayBefore = new Date(expiryDate);
+      oneDayBefore.setDate(expiryDate.getDate() - 1);
+      oneDayBefore.setHours(h, 0, 0, 0);
+      if (oneDayBefore.getTime() > baseDate.getTime()) {
+        notificationsToSchedule.push({
+          title: 'Teste Grátis Expirando',
+          body: 'ATENÇÃO! Falta 01 dia para finalizar seu teste gratis, ative o plano PRO',
+          id: 6000 + idx,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: oneDayBefore,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+        });
+      }
+    });
   }
 
   // PRO Expiry Notification

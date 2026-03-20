@@ -189,6 +189,63 @@ const OverdueNotification = ({ count, onClick, onClose }: { count: number, onCli
   );
 };
 
+const ProPlanNotification = ({ message, onClose }: { message: string, onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div 
+      initial={{ y: -100, x: '-50%', opacity: 0 }}
+      animate={{ y: 0, x: '-50%', opacity: 1 }}
+      exit={{ y: -100, x: '-50%', opacity: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+      className="fixed toast-safe left-1/2 z-[9999] w-[92%] max-w-sm"
+    >
+      <div 
+        className="relative group overflow-hidden rounded-3xl shadow-2xl border border-violet-400/30 bg-violet-600 p-5 flex items-center gap-4 active:scale-95 transition-transform"
+      >
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
+        
+        <div className="relative flex items-center justify-center w-12 h-12 shrink-0">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+          >
+            <Crown size={36} className="text-white" strokeWidth={2.5} />
+          </motion.div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h4 className="text-white font-black text-sm uppercase tracking-tight leading-none mb-1">
+            PLANO PRO NECESSÁRIO
+          </h4>
+          <p className="text-violet-100 text-[11px] font-bold leading-tight uppercase">
+            {message}
+          </p>
+        </div>
+
+        <button 
+          onClick={onClose}
+          className="relative w-8 h-8 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 text-white transition-colors"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="absolute bottom-0 left-0 h-1.5 bg-violet-900/40 w-full">
+          <motion.div 
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: 5, ease: 'linear' }}
+            className="h-full bg-white"
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>(() => {
     const hash = window.location.hash.replace('#', '');
@@ -228,6 +285,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showOverdueNotification, setShowOverdueNotification] = useState(false);
   const [dismissedNotification, setDismissedNotification] = useState(false);
+  const [proMessage, setProMessage] = useState<string | null>(null);
 
   useEffect(() => { if (userProfile) fetchData(); }, [userProfile]);
 
@@ -273,9 +331,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 
   useEffect(() => {
     if (contracts.length > 0 && clients.length > 0) {
-      scheduleContractNotifications(contracts, clients, userProfile?.pro_expires_at);
+      scheduleContractNotifications(contracts, clients, userProfile?.pro_expires_at, userProfile?.trial_expires_at);
     }
-  }, [contracts, clients, userProfile?.pro_expires_at]);
+  }, [contracts, clients, userProfile?.pro_expires_at, userProfile?.trial_expires_at]);
 
   const getInstallmentDueDate = (c: Contract, installmentIndex: number) => {
     const firstDueDate = new Date(c.end_date + 'T12:00:00');
@@ -351,10 +409,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
 
   const isPro = userProfile?.is_pro && (!userProfile.pro_expires_at || new Date(userProfile.pro_expires_at) > new Date());
   
-  const trialDays = 7;
-  const createdAt = userProfile?.created_at ? new Date(userProfile.created_at) : new Date();
-  const trialExpiresAt = new Date(createdAt.getTime() + trialDays * 24 * 60 * 60 * 1000);
-  const isTrial = !isPro && trialExpiresAt > new Date();
+  const trialStartedAt = userProfile?.trial_started_at ? new Date(userProfile.trial_started_at) : (userProfile?.created_at ? new Date(userProfile.created_at) : new Date());
+  const trialExpiresAt = userProfile?.trial_expires_at ? new Date(userProfile.trial_expires_at) : new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const isTrial = !isPro && userProfile?.is_trial && trialExpiresAt > new Date();
   const hasAccess = isPro || isTrial;
   
   const getRemainingTime = (expiresAt: string | Date) => {
@@ -375,6 +432,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
   const clientLimit = hasAccess ? 999999 : 0;
   const canAddClient = hasAccess || clients.length < clientLimit;
 
+  const handleAddClient = () => {
+    if (!hasAccess) {
+      setProMessage("ATIVE O PLANO PRO PARA INCLUIR NOVOS CLIENTES!");
+      return;
+    }
+    setShowClientModal(true);
+  };
+
   return (
     <div className="flex h-full overflow-hidden flex-col lg:flex-row uppercase font-bold text-slate-900">
       <AnimatePresence>
@@ -392,6 +457,12 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
             }}
           />
         )}
+        {proMessage && (
+          <ProPlanNotification 
+            message={proMessage} 
+            onClose={() => setProMessage(null)} 
+          />
+        )}
       </AnimatePresence>
       <aside className="w-56 xl:w-64 glass-panel border-r border-slate-200 hidden lg:flex flex-col text-slate-500 z-50">
         <div className="p-6 xl:p-8 flex flex-col gap-1">
@@ -405,7 +476,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           <SidebarItem icon={<History size={20} />} label="LIQUIDADOS" active={activeTab === 'settled'} onClick={() => handleTabChange('settled')} />
           
           <button 
-            onClick={handleOpenContractModal}
+            onClick={() => handleOpenContractModal()}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-[8px] font-black tracking-wider uppercase text-white bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30 hover:opacity-90"
           >
             <Plus size={20} />
@@ -413,7 +484,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           </button>
 
           <button 
-            onClick={() => setShowClientModal(true)}
+            onClick={handleAddClient}
             className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-[8px] font-black tracking-wider uppercase text-white bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 hover:opacity-90"
           >
             <Plus size={20} />
@@ -424,7 +495,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           <div className={`px-3 py-1.5 xl:py-2.5 rounded-lg flex flex-col items-center justify-center gap-1 ${isPro ? 'bg-violet-100 text-violet-700' : isTrial ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
             <div className="flex items-center gap-2">
               {isPro ? <Crown size={14} className="fill-violet-700" /> : <User size={14} />}
-              <span className="text-[10px] xl:text-xs font-black tracking-widest uppercase">{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'CONTA GRÁTIS'}</span>
+              <span className="text-[10px] xl:text-xs font-black tracking-widest uppercase">{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'PLANO GRÁTIS'}</span>
             </div>
             {isPro && userProfile?.pro_expires_at && (
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
@@ -435,7 +506,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
             )}
             {isTrial && (
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-amber-200 pt-1">
-                <p>INÍCIO: {createdAt.toLocaleDateString('pt-BR')}</p>
+                <p>INÍCIO: {trialStartedAt.toLocaleDateString('pt-BR')}</p>
                 <p>TÉRMINO: {trialExpiresAt.toLocaleDateString('pt-BR')}</p>
                 <p className="font-black text-black">RESTAM: {getRemainingTime(trialExpiresAt)}</p>
               </div>
@@ -455,10 +526,10 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                 {userProfile?.full_name?.split(' ')[0]}
                 {isPro && <Crown size={12} className="text-violet-600 fill-violet-600 ml-[7px] w-[12px] h-[12px]" />}
               </p>
-              <p className={`text-[11px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : isTrial ? 'text-amber-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'CONTA GRÁTIS'}</p>
+              <p className={`text-[11px] leading-[11.5px] font-black tracking-widest uppercase mt-1 ${isPro ? 'text-violet-600' : isTrial ? 'text-amber-600' : 'text-emerald-600'}`}>{isPro ? 'CONTA PRO' : isTrial ? 'TESTE GRÁTIS' : 'PLANO GRÁTIS'}</p>
             </div>
-            <div className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : isTrial ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-slate-200 text-slate-600'}`}>
-              <User size={16} />
+            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${isPro ? 'bg-violet-50 border-violet-200 text-violet-600' : isTrial ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-emerald-100 border-emerald-300 text-emerald-600'}`}>
+              <User size={18} strokeWidth={2.5} />
             </div>
           </button>
         </header>
@@ -469,7 +540,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
             className="w-full primary-gradient text-white py-2 flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-all z-30 relative border-b border-violet-400/20"
           >
             <Crown size={14} className="text-white fill-white" />
-            <span className="text-[9px] font-black tracking-[0.3em]">Ativar conta PRO</span>
+            <span className="text-[11px] leading-[13.5px] font-black tracking-[0.3em]">Ativar conta PRO</span>
           </button>
         )}
 
@@ -480,11 +551,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                clients={clients} 
                handleTabChange={handleTabChange} 
                onAddClient={() => {
-                 if (canAddClient) {
-                   setShowClientModal(true);
-                 } else {
-                   setShowUpgrade(true);
-                 }
+                 handleAddClient();
                }}
                onAddContract={() => {
                  handleOpenContractModal();
@@ -518,25 +585,13 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                       } 
                       searchValue={clientSearch}
                       onSearchChange={setClientSearch}
-                      onAdd={() => {
-                        if (canAddClient) {
-                          setShowClientModal(true);
-                        } else {
-                          setShowUpgrade(true);
-                        }
-                      }} 
+                      onAdd={handleAddClient} 
                       onSelect={setSelectedClient} 
                       onDelete={handleDeleteClient} 
-                      canAdd={canAddClient}
+                      canAdd={true}
                     />
                     <button
-                      onClick={() => {
-                        if (canAddClient) {
-                          setShowClientModal(true);
-                        } else {
-                          setShowUpgrade(true);
-                        }
-                      }}
+                      onClick={handleAddClient}
                       className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 w-14 h-14 lg:w-16 lg:h-16 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:bg-violet-700 transition-all active:scale-95 z-50 hover:rotate-90"
                     >
                       <Plus size={28} />
@@ -577,8 +632,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         </nav>
       </main>
 
-      {showClientModal && userProfile && <ClientModal userId={userProfile.id} onClose={() => setShowClientModal(false)} onSuccess={fetchData} />}
-      {showContractModal && userProfile && <ContractModal userId={userProfile.id} clients={clients} onClose={() => { setShowContractModal(false); setPreselectedClientId(null); }} onSuccess={fetchData} initialClientId={preselectedClientId} />}
+      {showClientModal && userProfile && <ClientModal userId={userProfile.id} onClose={() => setShowClientModal(false)} onSuccess={fetchData} hasAccess={hasAccess} onProMessage={setProMessage} />}
+      {showContractModal && userProfile && <ContractModal userId={userProfile.id} clients={clients} onClose={() => { setShowContractModal(false); setPreselectedClientId(null); }} onSuccess={fetchData} initialClientId={preselectedClientId} hasAccess={hasAccess} onProMessage={setProMessage} />}
       {selectedClient && (
         <ClientDetailsModal 
           client={selectedClient} 
@@ -848,7 +903,7 @@ const OverviewView = ({ contracts, clients, handleTabChange, onAddClient, onAddC
       <div className="px-5 space-y-6 max-w-7xl mx-auto pb-24">
         <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 max-w-2xl mx-auto">
           <button onClick={onAddContract} className="primary-gradient text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all hover:shadow-violet-500/25">
-            <Plus size={18} /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CONTRATO</span>
+            <Plus size={18} className="mb-[-2px]" /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest mb-[-2px]">NOVO CONTRATO</span>
           </button>
           <button onClick={onAddClient} className="bg-emerald-500 text-white py-4 lg:py-5 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all hover:bg-emerald-600">
             <Users size={18} className="text-white" /> <span className="text-[9px] lg:text-xs font-black uppercase tracking-widest">NOVO CLIENTE</span>
@@ -2109,7 +2164,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   );
 };
 
-const ClientModal = ({ userId, onClose, onSuccess }: any) => {
+const ClientModal = ({ userId, onClose, onSuccess, hasAccess, onProMessage }: any) => {
   const [form, setForm] = useState({ full_name: '', cpf: '', birth_date: '', phone: '', address: '', city: '', workplace: '' });
   const [saving, setSaving] = useState(false);
 
@@ -2131,10 +2186,18 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
+    if (!hasAccess) {
+      onProMessage("ATIVE O PLANO PRO PARA INCLUIR NOVOS CLIENTES!");
+      return;
+    }
+    if (!form.full_name.trim()) {
+      alert('O NOME COMPLETO É OBRIGATÓRIO.');
+      return;
+    }
     setSaving(true);
     
     const payload: any = { ...form, user_id: userId };
-    if (!payload.birth_date) {
+    if (!payload.birth_date || parseInt(payload.birth_date.split('-')[0]) < 1900) {
       delete payload.birth_date;
     }
     
@@ -2176,7 +2239,7 @@ const ClientModal = ({ userId, onClose, onSuccess }: any) => {
   );
 };
 
-const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }: any) => {
+const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, hasAccess, onProMessage }: any) => {
   const defaultDueDate = new Date();
   defaultDueDate.setMonth(defaultDueDate.getMonth() + 1);
 
@@ -2211,6 +2274,10 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasAccess) {
+      onProMessage("ATIVE O PLANO PRO PARA INCLUIR NOVOS CONTRATOS!");
+      return;
+    }
     if (!form.client_id) return;
     setSaving(true);
     
@@ -2347,12 +2414,12 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId }:
 
 const InputWrapper = ({ label, type = "text", value, onChange, placeholder, step, inputMode }: any) => (
   <div className="space-y-1 text-slate-900">
-    <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">{label}</label>
+    <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">{label}</label>
     <input 
       type={type} 
       step={step} 
       inputMode={inputMode}
-      className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl outline-none font-black text-slate-900 text-[10px] uppercase shadow-inner placeholder:text-slate-400 transition-all focus:bg-white focus:border-violet-500" 
+      className="w-full px-4 py-2.5 glass-input bg-slate-50 border border-slate-200 rounded-xl outline-none font-black text-slate-900 text-[10px] uppercase shadow-inner placeholder:text-slate-400 transition-all focus:bg-white focus:border-violet-500" 
       placeholder={placeholder} 
       value={value} 
       onChange={e => onChange(e.target.value)} 
@@ -2391,7 +2458,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const rescheduleNotifications = () => {
     console.log("Solicitando reagendamento de notificações...");
     import('../services/localNotifications').then(({ scheduleContractNotifications }) => {
-      scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
+      scheduleContractNotifications(contracts, clients, user?.pro_expires_at, user?.trial_expires_at);
     });
   };
 
@@ -2418,10 +2485,9 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
 
   const isPro = user.is_pro && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
 
-  const trialDays = 7;
-  const createdAt = user.created_at ? new Date(user.created_at) : new Date();
-  const trialExpiresAt = new Date(createdAt.getTime() + trialDays * 24 * 60 * 60 * 1000);
-  const isTrial = !isPro && trialExpiresAt > new Date();
+  const trialStartedAt = user.trial_started_at ? new Date(user.trial_started_at) : (user.created_at ? new Date(user.created_at) : new Date());
+  const trialExpiresAt = user.trial_expires_at ? new Date(user.trial_expires_at) : new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const isTrial = !isPro && user.is_trial && trialExpiresAt > new Date();
   const hasAccess = isPro || isTrial;
 
   const generateReport = async () => {
@@ -2868,11 +2934,6 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             <h3 className="text-[20px] font-black text-slate-900 tracking-tighter uppercase leading-tight">
               {user.full_name}
             </h3>
-            {user.display_id && (
-              <span className="text-black font-bold text-[13px] mt-0.5">
-                ID: {user.display_id}
-              </span>
-            )}
             {isPro ? (
               <div className="flex flex-col">
                 <span className="text-violet-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
@@ -2900,35 +2961,17 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 <span className="text-amber-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
                   TESTE GRÁTIS <User size={12} className="text-amber-600" />
                 </span>
-                <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                  <p>INÍCIO: {createdAt.toLocaleDateString('pt-BR')}</p>
-                  <p>TÉRMINO: {trialExpiresAt.toLocaleDateString('pt-BR')}</p>
-                  <p className="font-black text-amber-700">RESTAM: {remainingTrialTime || 'EXPIRADO'}</p>
-                  <div className="flex justify-start mt-2">
-                    <button 
-                      type="button" 
-                      onClick={onUpgradeRequest}
-                      className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
-                    >
-                      Assinar Plano Pro
-                    </button>
-                  </div>
+                <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1.5">
+                  <p className="opacity-70">INÍCIO: {trialStartedAt.toLocaleDateString('pt-BR')}</p>
+                  <p className="opacity-70">TÉRMINO: {trialExpiresAt.toLocaleDateString('pt-BR')}</p>
+                  <p className="font-black text-amber-700 mt-1.5">RESTAM: {remainingTrialTime || 'EXPIRADO'}</p>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col">
-                <p className="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase mt-0.5">
-                  VERSÃO GRÁTIS
-                </p>
-                <div className="flex justify-start mt-2">
-                  <button 
-                    type="button" 
-                    onClick={onUpgradeRequest}
-                    className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
-                  >
-                    Assinar Plano Pro
-                  </button>
-                </div>
+                <span className="text-emerald-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
+                  PLANO GRÁTIS <User size={12} className="text-emerald-600" />
+                </span>
               </div>
             )}
           </div>
@@ -2958,8 +3001,16 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             </p>
           </div>
         </div>
-        {!user.is_pro && <button type="button" onClick={onUpgradeRequest} className="mx-auto px-8 primary-gradient text-white py-2.5 rounded-full font-black text-[9px] uppercase tracking-[0.3em] shadow-xl hover:shadow-violet-500/25 transition-all flex items-center justify-center gap-2 active:scale-95"><Crown size={14}/> ATIVAR PRO</button>}
         <div className="space-y-2">
+          {!user.is_pro && (
+            <button 
+              type="button" 
+              onClick={onUpgradeRequest} 
+              className="w-full h-[52px] primary-gradient text-white rounded-full font-black text-[10px] uppercase tracking-[0.3em] shadow-xl hover:shadow-violet-500/25 transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Crown size={16}/> ATIVAR O PLANO PRO
+            </button>
+          )}
           <button 
             type="button" 
             onClick={hasAccess ? onBackupRequest : () => setShowProMessage(true)} 
@@ -3001,10 +3052,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                   import('../services/localNotifications').then(({ setupLocalNotifications, scheduleContractNotifications }) => {
                     if (newState) {
                       setupLocalNotifications().then(() => {
-                        scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
+                        scheduleContractNotifications(contracts, clients, user?.pro_expires_at, user?.trial_expires_at);
                       });
                     } else {
-                      scheduleContractNotifications(contracts, clients, user?.pro_expires_at);
+                      scheduleContractNotifications(contracts, clients, user?.pro_expires_at, user?.trial_expires_at);
                     }
                   });
                 } : () => setShowProMessage(true)}

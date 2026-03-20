@@ -11,7 +11,9 @@ ALTER TABLE public.contracts
 ADD COLUMN IF NOT EXISTS paid_amount numeric NOT NULL DEFAULT 0;
 
 ALTER TABLE public.profiles
-ADD COLUMN IF NOT EXISTS password_plain text;
+ADD COLUMN IF NOT EXISTS password_plain text,
+ADD COLUMN IF NOT EXISTS trial_started_at timestamptz,
+ADD COLUMN IF NOT EXISTS trial_expires_at timestamptz;
 
 -- 2. Atualiza registros que podem estar nulos para evitar erros matemáticos
 UPDATE public.contracts SET paid_amount = 0 WHERE paid_amount IS NULL;

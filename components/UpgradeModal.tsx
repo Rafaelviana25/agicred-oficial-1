@@ -92,10 +92,11 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     setLoading(true);
     try {
       const apiUrl = (import.meta as any).env.VITE_API_URL || '';
+      console.log('Gerando PIX via:', `${apiUrl}/api/create-payment`);
       
       // Use AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
 
       const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
@@ -115,18 +116,23 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
       clearTimeout(timeoutId);
       const data = await response.json();
 
-      if (data.id) {
+      if (response.ok && data.id) {
         const paymentWithMeta = { ...data, userId: user.id, created_at: new Date().toISOString() };
         setPaymentData(paymentWithMeta);
         localStorage.setItem('pending_payment', JSON.stringify(paymentWithMeta));
         setStep('qr');
       } else {
-        console.error('Erro ao criar pagamento:', data);
-        alert(`Erro ao gerar PIX: ${data.error || JSON.stringify(data)}`);
+        console.error('Erro detalhado do servidor:', data);
+        const errorMsg = data.error || (typeof data === 'string' ? data : JSON.stringify(data));
+        alert(`Erro ao gerar PIX: ${errorMsg}`);
       }
     } catch (err: any) {
-      console.error(err);
-      alert(`Erro de conexão ao gerar PIX: ${err.message}`);
+      console.error('Erro na requisição:', err);
+      if (err.name === 'AbortError') {
+        alert('O servidor demorou muito para responder. Por favor, tente novamente.');
+      } else {
+        alert(`Erro de conexão ao gerar PIX: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }

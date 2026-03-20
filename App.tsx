@@ -67,16 +67,9 @@ const App: React.FC = () => {
       .eq('id', userId)
       .maybeSingle();
 
-    const generateFixedId = (id: string): string => {
-      let hash = 0;
-      for (let i = 0; i < id.length; i++) {
-        hash = ((hash << 5) - hash) + id.charCodeAt(i);
-        hash |= 0;
-      }
-      return Math.abs(hash % 9000000 + 1000000).toString();
-    };
-
-    const fixedId = data?.display_id || generateFixedId(userId);
+    const now = new Date();
+    const trialExpires = new Date();
+    trialExpires.setDate(now.getDate() + 7);
 
     const fallbackProfile = {
       id: userId,
@@ -84,9 +77,11 @@ const App: React.FC = () => {
       full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
       cpf: currentSession?.user?.user_metadata?.cpf || '',
       phone: currentSession?.user?.user_metadata?.phone || '',
-      display_id: fixedId,
       is_pro: false,
-      created_at: new Date().toISOString()
+      is_trial: true,
+      trial_started_at: now.toISOString(),
+      trial_expires_at: trialExpires.toISOString(),
+      created_at: now.toISOString()
     };
 
     if (error) {
@@ -100,22 +95,7 @@ const App: React.FC = () => {
     }
 
     if (data) {
-      if (!data.display_id) {
-        const { data: updatedProfile } = await supabase
-          .from('profiles')
-          .update({ display_id: fixedId })
-          .eq('id', userId)
-          .select()
-          .single();
-        
-        if (updatedProfile) {
-          setProfile(updatedProfile);
-        } else {
-          setProfile({ ...data, display_id: fixedId });
-        }
-      } else {
-        setProfile(data);
-      }
+      setProfile(data);
       setHasSchemaError(false);
       setupLocalNotifications();
     } else {

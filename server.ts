@@ -33,11 +33,14 @@ async function startServer() {
   
   if (mpAccessToken) {
     try {
+      console.log('Mercado Pago Access Token found (length:', mpAccessToken.length, ')');
       const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
       payment = new Payment(client);
     } catch (e) {
       console.error('Failed to initialize Mercado Pago client:', e);
     }
+  } else {
+    console.warn('MERCADO_PAGO_ACCESS_TOKEN is missing in environment variables');
   }
 
   // Webhook Handler - Moved to top to ensure it's not intercepted
@@ -110,6 +113,7 @@ async function startServer() {
               .from('profiles')
               .update({ 
                 is_pro: true,
+                is_trial: false,
                 pro_started_at: now.toISOString(),
                 pro_expires_at: expiryDate.toISOString()
               })
@@ -252,6 +256,33 @@ const checkAndSendOverdueNotifications = async () => {
   // Schedule the cron job for 8:00 AM and 8:00 PM (20:00)
   cron.schedule('0 8,20 * * *', checkAndSendOverdueNotifications);
 
+  // --- CRON JOB: Check for expired trials ---
+  const checkExpiredTrials = async () => {
+    console.log('Running check for expired trials...');
+    if (!supabase) return;
+
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ is_trial: false })
+        .eq('is_trial', true)
+        .lt('trial_expires_at', now)
+        .select();
+
+      if (error) {
+        console.error('Error checking expired trials:', error);
+      } else if (data && data.length > 0) {
+        console.log(`Expired ${data.length} trials.`);
+      }
+    } catch (err) {
+      console.error('Exception in trial check:', err);
+    }
+  };
+
+  // Run trial check every hour
+  cron.schedule('0 * * * *', checkExpiredTrials);
+
   // Manual trigger endpoint for testing
   app.post('/api/trigger-overdue-check', async (req, res) => {
     const result = await checkAndSendOverdueNotifications();
@@ -260,6 +291,11 @@ const checkAndSendOverdueNotifications = async () => {
     } else {
       res.status(500).json(result);
     }
+  });
+
+  app.post('/api/trigger-trial-check', async (req, res) => {
+    await checkExpiredTrials();
+    res.json({ success: true, message: 'Trial check triggered' });
   });
   // -------------------------------------------------------------------------
 
@@ -296,14 +332,18 @@ const checkAndSendOverdueNotifications = async () => {
 
       const firstName = name ? name.split(' ')[0] : 'Cliente';
       const lastName = name && name.split(' ').length > 1 ? name.split(' ').slice(1).join(' ') : 'Agicred';
-      const cleanTaxId = taxId ? taxId.replace(/\D/g, '') : '00000000000';
+      const cleanTaxId = taxId ? taxId.replace(/\D/g, '') : '';
+
+      if (!cleanTaxId || (cleanTaxId.length !== 11 && cleanTaxId.length !== 14)) {
+        return res.status(400).json({ error: 'CPF ou CNPJ inválido. Certifique-se de digitar todos os números corretamente.' });
+      }
 
       const body = {
         transaction_amount: Number(amount),
         description: description,
         payment_method_id: 'pix',
         payer: {
-          email: email,
+          email: email.trim().toLowerCase(),
           first_name: firstName,
           last_name: lastName,
           identification: {
@@ -321,6 +361,7 @@ const checkAndSendOverdueNotifications = async () => {
       // Use a unique idempotency key to potentially speed up processing and prevent duplicates
       const idempotencyKey = `pay_${userId}_${Date.now()}`;
 
+      console.log(`Creating payment for user ${userId} (${email}), amount: ${amount}, plan: ${planType}`);
       console.time(`mp_create_payment_${userId}`);
       
       // Use AbortController for timeout to prevent hanging
@@ -344,14 +385,26 @@ const checkAndSendOverdueNotifications = async () => {
       
       const response = await mpResponse.json();
       
+      if (!mpResponse.ok) {
+        console.error('Mercado Pago Error Response:', JSON.stringify(response));
+        const mpErrorMessage = response.message || response.error || 'Erro desconhecido no Mercado Pago';
+        const mpCause = response.cause && Array.isArray(response.cause) && response.cause.length > 0 
+          ? `: ${response.cause[0].description || JSON.stringify(response.cause[0])}` 
+          : '';
+        return res.status(mpResponse.status).json({ 
+          error: `Mercado Pago: ${mpErrorMessage}${mpCause}`,
+          details: response
+        });
+      }
+
       console.log(`Payment created for user ${userId}, status: ${response.status}`);
 
       if (response.status === 'rejected') {
-        return res.status(400).json({ error: 'Pagamento rejeitado pelo Mercado Pago. Verifique se o CPF e os dados estão corretos.' });
+        return res.status(400).json({ error: 'Pagamento rejeitado pelo Mercado Pago. Verifique se o CPF e os dados estão corretos.', details: response });
       }
 
       if (!response.point_of_interaction?.transaction_data?.qr_code_base64) {
-        return res.status(400).json({ error: 'Mercado Pago não retornou o QR Code. Verifique os dados e tente novamente.' });
+        return res.status(400).json({ error: 'Mercado Pago não retornou o QR Code. Verifique os dados e tente novamente.', details: response });
       }
 
       res.json({
@@ -413,6 +466,7 @@ const checkAndSendOverdueNotifications = async () => {
 
              await supabase.from('profiles').update({ 
                 is_pro: true,
+                is_trial: false,
                 pro_expires_at: expiryDate.toISOString()
              }).eq('id', userId);
           }
