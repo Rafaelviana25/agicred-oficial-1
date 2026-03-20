@@ -52,7 +52,18 @@ const Login: React.FC<LoginProps> = ({ onSwitch, onRecoveryMode }) => {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
     
     if (authError) {
-      setError("CREDENCIAIS INVÁLIDAS OU ERRO DE ACESSO");
+      console.error("Login error:", authError);
+      let errorMessage = "CREDENCIAIS INVÁLIDAS OU ERRO DE ACESSO";
+      
+      if (authError.message.includes("Email not confirmed")) {
+        errorMessage = "E-MAIL NÃO CONFIRMADO. POR FAVOR, VERIFIQUE SUA CAIXA DE ENTRADA.";
+      } else if (authError.message.includes("Invalid login credentials")) {
+        errorMessage = "E-MAIL OU SENHA INCORRETOS.";
+      } else {
+        errorMessage = `ERRO: ${authError.message.toUpperCase()}`;
+      }
+      
+      setError(errorMessage);
       setLoading(false);
       return;
     }
@@ -460,7 +471,7 @@ Pelo menos um número (0 a 9)`;
                 type="email" required
                 className="w-full pl-11 pr-4 py-3 glass-input rounded-xl focus:ring-2 focus:ring-violet-500 transition text-slate-900 font-bold text-xs outline-none placeholder:text-slate-400 lowercase shadow-inner"
                 placeholder="e-mail"
-                value={email} onChange={e => setEmail(e.target.value.toLowerCase())}
+                value={email} onChange={e => setEmail(e.target.value.trim().toLowerCase())}
               />
             </div>
           </div>

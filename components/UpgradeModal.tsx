@@ -25,6 +25,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   const [checking, setChecking] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [paymentErrorMsg, setPaymentErrorMsg] = useState<string | null>(null);
+  const [formErrorMsg, setFormErrorMsg] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState<number>(1800);
 
   const plans = [
@@ -90,9 +91,12 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     if (!selectedPlan) return;
     
     setLoading(true);
+    setFormErrorMsg(null);
     try {
-      const apiUrl = (import.meta as any).env.VITE_API_URL || '';
-      console.log('Gerando PIX via:', `${apiUrl}/api/create-payment`);
+      // Forçando o uso do servidor local (AI Studio) para que as novas mensagens de erro detalhadas funcionem.
+      // O servidor antigo no Render estava ocultando o erro real do Mercado Pago.
+      const apiUrl = ''; 
+      console.log('Gerando PIX via:', `${apiUrl || 'servidor local'}/api/create-payment`);
       
       // Use AbortController for timeout
       const controller = new AbortController();
@@ -124,19 +128,21 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
       } else {
         console.error('Erro detalhado do servidor:', data);
         const errorMsg = data.error || (typeof data === 'string' ? data : JSON.stringify(data));
-        alert(`Erro ao gerar PIX: ${errorMsg}`);
+        setFormErrorMsg(errorMsg);
       }
     } catch (err: any) {
       console.error('Erro na requisição:', err);
       if (err.name === 'AbortError') {
-        alert('O servidor demorou muito para responder. Por favor, tente novamente.');
+        setFormErrorMsg('O servidor demorou muito para responder. Por favor, tente novamente.');
       } else {
-        alert(`Erro de conexão ao gerar PIX: ${err.message}`);
+        setFormErrorMsg(`Erro de conexão ao gerar PIX: ${err.message}`);
       }
     } finally {
       setLoading(false);
     }
   };
+
+  const isPro = user.is_pro && (!user.pro_expires_at || new Date(user.pro_expires_at) > new Date());
 
   const checkStatus = async () => {
     if (!paymentData) return false;
@@ -307,7 +313,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               </div>
             </div>
 
-            {!user.is_pro && (
+            {!isPro && (
               <button onClick={onClose} className="w-full max-w-md bg-emerald-500 text-white py-4 rounded-2xl text-[11px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-8 shadow-lg shadow-emerald-500/20">
                 CONTINUAR COM CONTA GRÁTIS (LIMITADA)
               </button>
@@ -319,11 +325,17 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               <h2 className="text-xl font-black text-slate-900 tracking-tight" style={{ marginTop: '10px' }}>DADOS DE PAGAMENTO</h2>
             </div>
 
-            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto" style={{ marginTop: '32px', height: '256.632px', width: '319.156px' }}>
+            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto" style={{ marginTop: '32px' }}>
               <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center">
                 <p className="text-[10px] font-bold text-violet-600 tracking-widest">PLANO SELECIONADO</p>
                 <p className="text-lg font-black text-violet-900 mt-1">{selectedPlan?.label} - R$ {selectedPlan?.amount.toFixed(2).replace('.', ',')}</p>
               </div>
+
+              {formErrorMsg && (
+                <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-[10px] font-black border border-rose-200 uppercase tracking-widest text-center leading-tight shadow-sm">
+                  {formErrorMsg}
+                </div>
+              )}
               
               <div className="space-y-3 px-2">
                 <div className="flex items-center gap-2 text-[13px] font-black text-slate-900">

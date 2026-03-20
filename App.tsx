@@ -95,7 +95,36 @@ const App: React.FC = () => {
     }
 
     if (data) {
-      setProfile(data);
+      // Verifica se o plano PRO ou TRIAL expirou
+      let needsUpdate = false;
+      const updates: any = {};
+
+      if (data.is_pro && data.pro_expires_at && new Date(data.pro_expires_at) < now) {
+        updates.is_pro = false;
+        needsUpdate = true;
+      }
+
+      if (data.is_trial && data.trial_expires_at && new Date(data.trial_expires_at) < now) {
+        updates.is_trial = false;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        const { data: updatedData, error: updateError } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', userId)
+          .select()
+          .single();
+          
+        if (!updateError && updatedData) {
+          setProfile(updatedData);
+        } else {
+          setProfile({ ...data, ...updates });
+        }
+      } else {
+        setProfile(data);
+      }
       setHasSchemaError(false);
       setupLocalNotifications();
     } else {

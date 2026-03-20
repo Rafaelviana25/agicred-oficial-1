@@ -55,7 +55,9 @@ import {
   Mail,
   Settings,
   Globe,
-  Filter
+  Filter,
+  Receipt,
+  FileEdit
 } from 'lucide-react';
 
 import { AgicredLogo } from '../components/AgicredLogo';
@@ -499,7 +501,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
             </div>
             {isPro && userProfile?.pro_expires_at && (
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
-                <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : (userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                 <p className="font-black text-black">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
               </div>
@@ -1179,6 +1181,30 @@ const SettledSection = ({ settledContracts, clients, onSelectContract }: any) =>
 const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, setCurrentMonth, currentYear, setCurrentYear }: any) => {
   const monthsAbbr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
   
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState('date-desc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const sortOptions = [
+    { value: 'date-desc', label: 'DATA MAIS RECENTE' },
+    { value: 'date-asc', label: 'DATA MAIS ANTIGA' },
+    { value: 'name-asc', label: 'NOME (A-Z)' },
+    { value: 'name-desc', label: 'NOME (Z-A)' },
+    { value: 'value-desc', label: 'VALOR MAIOR' },
+    { value: 'value-asc', label: 'VALOR MENOR' },
+  ];
+
   const filteredContractsWithInfo = contracts.filter((c: Contract) => {
     const firstDueDate = new Date(c.end_date + 'T12:00:00');
     if (c.months > 1) {
@@ -1214,6 +1240,39 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
     
     return { ...c, activeInstallment, dueDateThisMonth, isThisInstallmentPaid };
   });
+
+  const finalFilteredContracts = [...filteredContractsWithInfo]
+    .filter((c: any) => {
+      const client = clients.find((cl: any) => cl.id === c.client_id);
+      const searchLower = searchTerm.toLowerCase();
+      const clientName = client?.full_name?.toLowerCase() || '';
+      const amountStr = c.monthly_interest.toString();
+      const dateStr = c.dueDateThisMonth;
+      
+      return clientName.includes(searchLower) || amountStr.includes(searchLower) || dateStr.includes(searchLower);
+    })
+    .sort((a: any, b: any) => {
+      const clientA = clients.find((cl: any) => cl.id === a.client_id)?.full_name || '';
+      const clientB = clients.find((cl: any) => cl.id === b.client_id)?.full_name || '';
+      
+      switch (sortOption) {
+        case 'name-asc': return clientA.localeCompare(clientB);
+        case 'name-desc': return clientB.localeCompare(clientA);
+        case 'date-desc': {
+          const dateA = a.dueDateThisMonth.split('/').reverse().join('-');
+          const dateB = b.dueDateThisMonth.split('/').reverse().join('-');
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
+        }
+        case 'date-asc': {
+          const dateA = a.dueDateThisMonth.split('/').reverse().join('-');
+          const dateB = b.dueDateThisMonth.split('/').reverse().join('-');
+          return new Date(dateA).getTime() - new Date(dateB).getTime();
+        }
+        case 'value-desc': return b.monthly_interest - a.monthly_interest;
+        case 'value-asc': return a.monthly_interest - b.monthly_interest;
+        default: return 0;
+      }
+    });
 
   return (
     <div className="space-y-3 animate-in fade-in duration-500 uppercase font-black pb-10 text-slate-900">
@@ -1290,8 +1349,62 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
         </div>
       </div>
 
+      <div className="flex flex-row gap-2 mb-0 mt-[7px] pr-[4px] pl-0 h-[34px]">
+        <div className="relative w-[43px] h-[35px] mt-[-1px] mb-0 ml-0 flex items-center justify-center bg-white border border-slate-200 rounded-xl shrink-0" ref={filterRef}>
+          <button 
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="w-full h-full flex items-center justify-center text-slate-400 hover:text-violet-600 transition-colors"
+          >
+            <Filter className="h-4 w-4" />
+          </button>
+          
+          <AnimatePresence>
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute top-full left-0 mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-[100] overflow-hidden"
+              >
+                <div className="py-1">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortOption(option.value);
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-[8px] font-black uppercase tracking-widest transition-colors ${
+                        sortOption === option.value 
+                          ? 'bg-violet-50 text-violet-600' 
+                          : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            placeholder=""
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all uppercase tracking-widest"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2 pt-1">
-         {filteredContractsWithInfo.map((c: any) => {
+         {finalFilteredContracts.map((c: any) => {
            const client = clients.find((cl: any) => cl.id === c.client_id);
            const isSettled = c.status === 'paid' || c.isThisInstallmentPaid;
            
@@ -1680,6 +1793,153 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     setUpdating(false);
     setEditingPaymentDate(null);
     onSuccess();
+  };
+
+  const generateReceipt = () => {
+    const clientName = client?.full_name || 'Cliente';
+    const startDate = new Date(contract.start_date + 'T12:00:00').toLocaleDateString('pt-BR');
+    
+    const firstDueDate = new Date(contract.end_date + 'T12:00:00');
+    if (contract.months > 1) {
+      firstDueDate.setMonth(firstDueDate.getMonth() - (contract.months - 1));
+    }
+    const firstDueDateStr = firstDueDate.toLocaleDateString('pt-BR');
+    const lastDueDateStr = new Date(contract.end_date + 'T12:00:00').toLocaleDateString('pt-BR');
+
+    const capital = Number(contract.capital).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const interestRate = contract.interest_rate;
+    const totalInterest = Number(contract.total_interest).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const totalAmount = Number(contract.total_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const monthlyInterest = Number(contract.monthly_interest).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    let receiptText = `*RECIBO DE EMPRÉSTIMO*\n\n`;
+    receiptText += `*Cliente:* ${clientName}\n`;
+    receiptText += `*Data do Empréstimo:* ${startDate}\n`;
+    receiptText += `*Valor Emprestado:* ${capital}\n`;
+    receiptText += `*Taxa de Juros:* ${interestRate}%\n`;
+    receiptText += `*Total de Juros:* ${totalInterest}\n`;
+    receiptText += `*Valor Total a Pagar:* ${totalAmount}\n\n`;
+    receiptText += `*Condições de Pagamento:*\n`;
+    receiptText += `*Parcelas:* ${contract.months}x de ${monthlyInterest}\n`;
+    receiptText += `*Primeiro Vencimento:* ${firstDueDateStr}\n`;
+    if (contract.months > 1) {
+      receiptText += `*Último Vencimento:* ${lastDueDateStr}\n`;
+    }
+    receiptText += `\n*Status:* ${contract.status === 'paid' ? 'LIQUIDADO' : 'ATIVO'}\n`;
+
+    // Generate PDF
+    const doc = new jsPDF();
+    const contractId = contract.id.substring(0, 8).toUpperCase();
+    
+    // Background Header
+    doc.setFillColor(248, 250, 252); // slate-50
+    doc.rect(0, 0, 210, 55, 'F');
+    
+    // Logo
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text("AGI", 20, 30);
+    
+    const agiWidth = doc.getTextWidth("AGI");
+    doc.setTextColor(124, 58, 237); // violet-600
+    doc.text("CRED", 20 + agiWidth, 30);
+    
+    // ID and Date on the right
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Nº DO TÍTULO: #${contractId}`, 190, 25, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.text(`EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 190, 32, { align: "right" });
+    
+    // Header Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("COMPROVANTE DE EMPRÉSTIMO", 20, 48);
+    
+    // Content
+    const data = [
+      ["CLIENTE", clientName.toUpperCase()],
+      ["DATA DA OPERAÇÃO", startDate],
+      ["VALOR DO CAPITAL", capital],
+      ["TAXA DE JUROS", `${interestRate}% AO MÊS`],
+      ["TOTAL DE JUROS", totalInterest],
+      ["VALOR TOTAL BRUTO", totalAmount],
+      ["PLANO DE JUROS", `${contract.months} PARCELA(S) DE ${monthlyInterest} - TOTAL: ${totalInterest}`],
+      ["PRIMEIRO VENCIMENTO", firstDueDateStr],
+    ];
+    
+    if (contract.months > 1) {
+      data.push(["ÚLTIMO VENCIMENTO", lastDueDateStr]);
+    }
+    
+    data.push(["STATUS ATUAL", contract.status === 'paid' ? 'LIQUIDADO' : 'EM ABERTO']);
+    
+    autoTable(doc, {
+      startY: 65,
+      body: data,
+      theme: 'grid',
+      styles: {
+        fontSize: 10,
+        cellPadding: 6,
+        font: "helvetica",
+        lineColor: [226, 232, 240], // slate-200
+        lineWidth: 0.1,
+      },
+      columnStyles: {
+        0: { 
+          fontStyle: 'bold', 
+          cellWidth: 60, 
+          fillColor: [241, 245, 249], // slate-100
+          textColor: [71, 85, 105], // slate-600
+        },
+        1: { 
+          textColor: [15, 23, 42], // slate-900
+          fontStyle: 'bold',
+        }
+      },
+      margin: { left: 20, right: 20 }
+    });
+    
+    // Footer
+    const finalY = (doc as any).lastAutoTable.finalY + 40;
+    
+    // Signature Line
+    doc.setDrawColor(203, 213, 225); // slate-300
+    doc.setLineWidth(0.5);
+    doc.line(60, finalY, 150, finalY);
+    
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("ASSINATURA DO RESPONSÁVEL", 105, finalY + 8, { align: "center" });
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text("ESTE DOCUMENTO É UM COMPROVANTE DE OPERAÇÃO FINANCEIRA INTERNA.", 105, finalY + 25, { align: "center" });
+    doc.text("AGICRED - GESTÃO DE EMPRÉSTIMOS E FINANÇAS", 105, finalY + 30, { align: "center" });
+
+    // Save the PDF
+    const fileName = `recibo_${contractId}_${clientName.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+    
+    if (Capacitor.isNativePlatform()) {
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Documents,
+      }).then(() => {
+        alert('PDF salvo na pasta de documentos!');
+      }).catch(err => {
+        console.error('Erro ao salvar PDF no mobile', err);
+        doc.save(fileName);
+      });
+    } else {
+      doc.save(fileName);
+    }
   };
 
   const monthlyInterestOnly = Number(contract.monthly_interest) || 0;
@@ -2127,7 +2387,16 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
             </div>
             
             <div className="mt-4 space-y-2">
-                <label className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase flex items-center gap-1.5"><FileText size={12}/> ANOTAÇÕES</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-slate-500 tracking-[0.2em] uppercase flex items-center gap-1.5"><FileText size={12}/> ANOTAÇÕES</label>
+                  <button 
+                    onClick={generateReceipt}
+                    className="h-10 w-10 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center hover:bg-violet-200 transition-all shadow-sm active:scale-95"
+                    title="Baixar Recibo"
+                  >
+                    <FileEdit size={20} />
+                  </button>
+                </div>
                 <textarea 
                     className="w-full h-24 p-3 glass-input bg-slate-50 border border-slate-200 rounded-xl font-medium text-xs text-slate-700 outline-none focus:ring-1 focus:ring-violet-500 resize-none placeholder:text-slate-400 uppercase"
                     value={notes}
@@ -2449,6 +2718,53 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const [notifVib, setNotifVib] = useState(localStorage.getItem('notif_vib') !== 'false');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [validating, setValidating] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user.full_name || '');
+  const [editCpf, setEditCpf] = useState(user.cpf || '');
+  const [editPhone, setEditPhone] = useState(user.phone || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  const handleSaveProfile = async () => {
+    setProfileError('');
+    if (!editName.trim()) {
+      setProfileError('O nome não pode estar vazio.');
+      return;
+    }
+    const cleanCpf = editCpf.replace(/\D/g, '');
+    if (cleanCpf.length !== 11 && cleanCpf.length !== 14) {
+      setProfileError('CPF/CNPJ inválido.');
+      return;
+    }
+    const cleanPhone = editPhone.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setProfileError('Contato inválido.');
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editName,
+          cpf: cleanCpf,
+          phone: cleanPhone
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      
+      setIsEditing(false);
+      onRefresh();
+    } catch (err: any) {
+      console.error('Erro ao atualizar perfil:', err);
+      setProfileError('Erro ao salvar os dados. Tente novamente.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     setLocalNotificationsEnabled(localStorage.getItem('local_notifications_enabled') === 'true');
@@ -2941,7 +3257,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 </span>
                 {user.pro_expires_at && (
                   <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                    <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : 'N/A'}</p>
+                    <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : (user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
                     <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
                     <div className="flex justify-start mt-2">
@@ -2977,32 +3293,110 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           </div>
           <button type="button" onClick={onClose} className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors bg-slate-100 rounded-xl shrink-0 hover:bg-slate-200"><X size={20}/></button>
         </div>
-        <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-2">
-          <div className="flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">E-mail</p>
-            <p className="text-[12px] font-bold text-slate-900 truncate lowercase">{user.email}</p>
+        <div className="mt-4 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-4 relative">
+          <div className="absolute top-4 right-4">
+            {!isEditing ? (
+              <button 
+                type="button" 
+                onClick={() => setIsEditing(true)}
+                className="text-[9px] font-black text-violet-600 uppercase tracking-widest hover:text-violet-800 transition-colors"
+              >
+                EDITAR
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditName(user.full_name || '');
+                  setEditCpf(user.cpf || '');
+                  setEditPhone(user.phone || '');
+                  setProfileError('');
+                }}
+                className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+              >
+                CANCELAR
+              </button>
+            )}
           </div>
 
-          <div className="h-px bg-slate-50 w-full" />
+          {profileError && (
+            <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-[10px] font-bold">
+              {profileError}
+            </div>
+          )}
 
-          <div className="flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CPF</p>
-            <p className="text-[12px] font-bold text-slate-900">
-              {user.cpf.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
-            </p>
-          </div>
+          {isEditing ? (
+            <div className="space-y-3">
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">NOME COMPLETO</p>
+                <input 
+                  type="text" 
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 text-[12px] uppercase shadow-inner focus:bg-white focus:border-violet-500"
+                />
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">E-mail</p>
+                <p className="text-[12px] font-bold text-slate-500 truncate lowercase px-3 py-2 bg-slate-50 rounded-xl">{user.email}</p>
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">CPF</p>
+                <input 
+                  type="text" 
+                  value={editCpf}
+                  onChange={(e) => setEditCpf(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 text-[12px] uppercase shadow-inner focus:bg-white focus:border-violet-500"
+                />
+              </div>
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">CONTATO</p>
+                <input 
+                  type="text" 
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-900 text-[12px] uppercase shadow-inner focus:bg-white focus:border-violet-500"
+                />
+              </div>
+              <button 
+                type="button" 
+                onClick={handleSaveProfile}
+                disabled={savingProfile}
+                className="w-full mt-2 bg-violet-600 text-white py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-md hover:bg-violet-700 transition-colors disabled:opacity-50"
+              >
+                {savingProfile ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">E-mail</p>
+                <p className="text-[12px] font-bold text-slate-900 truncate lowercase">{user.email}</p>
+              </div>
 
-          <div className="h-px bg-slate-50 w-full" />
+              <div className="h-px bg-slate-50 w-full" />
 
-          <div className="flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CONTATO</p>
-            <p className="text-[12px] font-bold text-slate-900">
-              {user.phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
-            </p>
-          </div>
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CPF</p>
+                <p className="text-[12px] font-bold text-slate-900">
+                  {user.cpf.replace(/\D/g, '').replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
+                </p>
+              </div>
+
+              <div className="h-px bg-slate-50 w-full" />
+
+              <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">CONTATO</p>
+                <p className="text-[12px] font-bold text-slate-900">
+                  {user.phone.replace(/\D/g, '').replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         <div className="space-y-2">
-          {!user.is_pro && (
+          {!isPro && (
             <button 
               type="button" 
               onClick={onUpgradeRequest} 
@@ -3125,7 +3519,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             </div>
           )}
 
-          {showProMessage && !user.is_pro && (
+          {showProMessage && !isPro && (
             <p className="text-[8px] text-rose-500 font-black tracking-widest uppercase text-center animate-in fade-in slide-in-from-top-1">ESSA FUNÇÃO É PARA VERSÃO PRO</p>
           )}
         </div>

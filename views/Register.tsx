@@ -43,6 +43,36 @@ const Register: React.FC<RegisterProps> = ({ onSwitch }) => {
       return;
     }
     
+    try {
+      // Check if CPF or email already exists
+      const checkResponse = await fetch('/api/check-registration', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: form.email,
+          cpf: form.cpf
+        }),
+      });
+
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        if (checkData.exists) {
+          if (checkData.reason === 'cpf') {
+            setError("ESTE CPF JÁ ESTÁ CADASTRADO NO SISTEMA.");
+          } else {
+            setError("ESTE EMAIL JÁ ESTÁ CADASTRADO NO SISTEMA.");
+          }
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error checking registration:', err);
+      // Continue with registration if check fails, Supabase will still catch email duplicates
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({ 
       email: form.email, 
       password: form.password,
@@ -184,7 +214,7 @@ Pelo menos um número (0 a 9)`;
                     className="w-full px-4 py-3 glass-input rounded-xl outline-none text-slate-900 font-bold text-xs placeholder:text-slate-400 shadow-inner focus:ring-2 focus:ring-violet-500 transition lowercase" 
                     placeholder="exemplo@agicred.com"
                     value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value.toLowerCase() })} 
+                    onChange={(e) => setForm({ ...form, email: e.target.value.trim().toLowerCase() })} 
                   />
                 </div>
 
