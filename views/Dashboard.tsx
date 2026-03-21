@@ -693,13 +693,22 @@ const SummaryModal = ({ category, contracts, clients, onClose }: any) => {
         value = Number(c.capital) || 0;
         break;
       case 'capitalToReceive':
-        value = (Number(c.capital) || 0) - (c.status === 'paid' ? (Number(c.capital) || 0) : 0);
+        const cap = Number(c.capital) || 0;
+        const tint = Number(c.total_interest) || 0;
+        const paid = Number(c.paid_amount) || 0;
+        const capRec = c.status === 'paid' ? cap : Math.max(0, paid - tint);
+        value = cap - capRec;
         break;
       case 'interestReceived':
-        value = c.status === 'paid' ? (Number(c.total_interest) || 0) : (Number(c.paid_amount) || 0);
+        const tint2 = Number(c.total_interest) || 0;
+        const paid2 = Number(c.paid_amount) || 0;
+        value = c.status === 'paid' ? tint2 : Math.min(tint2, paid2);
         break;
       case 'interestToReceive':
-        value = (Number(c.total_interest) || 0) - (c.status === 'paid' ? (Number(c.total_interest) || 0) : (Number(c.paid_amount) || 0));
+        const tint3 = Number(c.total_interest) || 0;
+        const paid3 = Number(c.paid_amount) || 0;
+        const intRec = c.status === 'paid' ? tint3 : Math.min(tint3, paid3);
+        value = tint3 - intRec;
         break;
     }
 
@@ -824,18 +833,23 @@ const OverviewView = ({ contracts, clients, handleTabChange, onAddClient, onAddC
   
   // JUROS JÁ RECEBIDOS
   const totalInterestReceived = contracts.reduce((acc: number, c: any) => {
+    const tint = Number(c.total_interest) || 0;
+    const paid = Number(c.paid_amount) || 0;
     if (c.status === 'paid') {
-      return acc + (Number(c.total_interest) || 0);
+      return acc + tint;
     }
-    return acc + (Number(c.paid_amount) || 0);
+    return acc + Math.min(tint, paid);
   }, 0);
 
   // CAPITAL JÁ RECEBIDO
   const totalCapitalReceived = contracts.reduce((acc: number, c: any) => {
+    const cap = Number(c.capital) || 0;
+    const tint = Number(c.total_interest) || 0;
+    const paid = Number(c.paid_amount) || 0;
     if (c.status === 'paid') {
-      return acc + (Number(c.capital) || 0);
+      return acc + cap;
     }
-    return acc + 0;
+    return acc + Math.max(0, paid - tint);
   }, 0);
 
   const totalInterestGenerated = contracts.reduce((acc: number, c: any) => acc + (Number(c.total_interest) || 0), 0);
@@ -1322,25 +1336,25 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
             return (
               <>
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase">TOTAL DO MÊS A RECEBER</span>
-                  <span className="text-[12px] font-black text-slate-900 tracking-tighter">
+                  <span className="text-[11px] leading-[18px] text-rose-600 font-black tracking-widest uppercase">TOTAL DO MÊS A RECEBER</span>
+                  <span className="text-[12px] font-black text-rose-600 tracking-tighter">
                     R$ {totalMesAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] text-emerald-600 font-black tracking-widest uppercase">TOTAL DO MÊS RECEBIDO</span>
-                  <span className="text-[12px] font-black text-emerald-600 tracking-tighter mb-[-6px]">
+                <div className="flex justify-between items-center mt-[-10px] mb-0">
+                  <span className="text-[11px] leading-[18px] mb-[-3px] text-emerald-600 font-black tracking-widest uppercase">TOTAL DO MÊS RECEBIDO</span>
+                  <span className="text-[12px] font-black text-emerald-600 tracking-tighter mb-[-2px]">
                     R$ {totalMesRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex flex-col items-end mt-1 space-y-1">
-                   <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase">PARCELAS</span>
-                      <span className="text-[11px] font-black text-slate-700 w-[75px] text-right">R$ {parcelasRecebidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <div className="flex flex-col items-end mt-1">
+                   <div className="flex items-center gap-3 mt-[-9px]">
+                      <span className="text-[9px] italic text-black font-black tracking-widest uppercase">PARCELAS</span>
+                      <span className="text-[10px] font-black text-emerald-600 text-right">R$ {parcelasRecebidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                    </div>
-                   <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-slate-400 font-black tracking-widest uppercase">CAPITAL</span>
-                      <span className="text-[11px] font-black text-slate-700 w-[75px] text-right mb-0">R$ {capitalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                   <div className="flex items-center gap-3 mt-[-3px] mb-[-2px] mr-0">
+                      <span className="text-[9px] italic text-black font-black tracking-widest uppercase">CAPITAL</span>
+                      <span className="text-[10px] font-black text-emerald-600 text-right mb-0">R$ {capitalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                    </div>
                 </div>
               </>
@@ -1403,7 +1417,7 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
         </div>
       </div>
 
-      <div className="space-y-2 pt-1">
+      <div className="space-y-1 pt-1">
          {finalFilteredContracts.map((c: any) => {
            const client = clients.find((cl: any) => cl.id === c.client_id);
            const isSettled = c.status === 'paid' || c.isThisInstallmentPaid;
@@ -1412,10 +1426,10 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
              <div 
                key={c.id} 
                onClick={() => onSelectContract(c)}
-               className="glass-panel px-5 py-4 rounded-2xl shadow-sm flex items-center justify-between group hover:bg-slate-50 transition-all cursor-pointer border border-slate-200"
+               className={`glass-panel px-4 py-2 rounded-2xl shadow-sm flex items-center justify-between group hover:bg-slate-50 transition-all cursor-pointer border ${isSettled ? 'border-emerald-200' : 'border-rose-200'}`}
              >
                 <div className="flex items-center gap-3.5 overflow-hidden">
-                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isSettled ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-400 border-slate-200'}`}>
+                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isSettled ? 'bg-emerald-100 text-emerald-600 border-emerald-200' : 'bg-rose-600 text-white border-rose-600'}`}>
                       {isSettled ? <CheckCircle size={20}/> : <User size={20}/>}
                    </div>
                    <div className="overflow-hidden">
@@ -1427,7 +1441,8 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
                    <p className={`text-[12px] font-black ${isSettled ? 'text-slate-500' : 'text-slate-900'}`}>R$ {c.monthly_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                    <p className={`text-[9px] font-black uppercase tracking-widest ${isSettled ? 'text-emerald-600' : 'text-slate-400'}`}>
                       {isSettled ? 'LIQUIDADO' : c.dueDateThisMonth}
-                   </p>
+                    </p>
+                    {!isSettled && <p className="text-[8px] text-rose-600 font-black uppercase tracking-widest mt-0.5">PENDENTE</p>}
                 </div>
              </div>
            );
@@ -1922,7 +1937,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     doc.text("ESTE DOCUMENTO É UM COMPROVANTE DE OPERAÇÃO FINANCEIRA INTERNA.", 105, finalY + 25, { align: "center" });
     doc.text("AGICRED - GESTÃO DE EMPRÉSTIMOS E FINANÇAS", 105, finalY + 30, { align: "center" });
 
-    // Save the PDF
+    // Save and Share the PDF
     const fileName = `recibo_${contractId}_${clientName.replace(/\s+/g, '_').toLowerCase()}.pdf`;
     
     if (Capacitor.isNativePlatform()) {
@@ -1931,8 +1946,18 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
         path: fileName,
         data: pdfBase64,
         directory: Directory.Documents,
-      }).then(() => {
-        alert('PDF salvo na pasta de documentos!');
+      }).then(async (result) => {
+        try {
+          await Share.share({
+            title: 'Recibo de Empréstimo',
+            text: `Recibo de Empréstimo - ${clientName}`,
+            url: result.uri,
+            dialogTitle: 'Compartilhar Recibo'
+          });
+        } catch (shareErr) {
+          console.error('Erro ao compartilhar PDF', shareErr);
+          alert('PDF salvo na pasta de documentos!');
+        }
       }).catch(err => {
         console.error('Erro ao salvar PDF no mobile', err);
         doc.save(fileName);
@@ -2289,17 +2314,17 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                   <span className="text-[10px] text-violet-500 font-black tracking-widest mb-1 uppercase">CAPITAL BASE</span>
                   <span className="text-[16px] font-black text-violet-600 uppercase">R$ {contract.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
-               <div className="glass-panel p-3 rounded-2xl border border-rose-200 flex flex-col items-center text-center shadow-sm bg-white">
-                  <span className="text-[10px] text-rose-500 font-black tracking-widest mb-1 uppercase">TOTAL JUROS</span>
-                  <span className="text-[16px] font-black text-rose-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-               </div>
-               <div className="glass-panel p-3 rounded-2xl border border-emerald-200 flex flex-col items-center text-center shadow-sm bg-white">
-                  <span className="text-[10px] text-emerald-600 font-black tracking-widest mb-1 uppercase">VALOR JÁ PAGO</span>
-                  <span className="text-[16px] font-black text-emerald-600 uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-               </div>
                <div className="glass-panel p-3 rounded-2xl border border-blue-200 flex flex-col items-center text-center shadow-sm bg-white">
-                  <span className="text-[10px] text-blue-500 font-black tracking-widest mb-1 uppercase">SALDO RESTANTE</span>
-                  <span className="text-[16px] font-black text-blue-600 uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[10px] text-blue-500 font-black tracking-widest mb-1 uppercase">TOTAL JUROS</span>
+                  <span className="text-[16px] font-black text-blue-600 uppercase">R$ {contract.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               </div>
+               <div className="glass-panel p-3 rounded-2xl border border-emerald-500 flex flex-col items-center text-center shadow-sm bg-emerald-500">
+                  <span className="text-[10px] text-white font-black tracking-widest mb-1 uppercase">VALOR JÁ PAGO</span>
+                  <span className="text-[16px] font-black text-white uppercase">R$ {Number(contract.paid_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+               </div>
+               <div className="glass-panel p-3 rounded-2xl border border-rose-500 flex flex-col items-center text-center shadow-sm bg-rose-500">
+                  <span className="text-[10px] text-white font-black tracking-widest mb-1 uppercase">SALDO RESTANTE</span>
+                  <span className="text-[16px] font-black text-white uppercase">R$ {totalRemainingDebt.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                </div>
             </div>
 
@@ -2324,7 +2349,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                      return (
                         <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-slate-200 border-slate-300' : 'bg-white border-slate-200 shadow-sm'}`}>
                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-900'}`}>{i + 1}</div>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>{i + 1}</div>
                               <div>
                                  <p className="text-[12px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
                                  <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${isPaid ? 'text-slate-500' : 'text-rose-500'}`}>VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
@@ -2648,7 +2673,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                       return (
                          <div key={i} className="flex items-center justify-between p-2.5 glass-panel rounded-xl border border-slate-200 shadow-sm transition-all hover:border-violet-500/30 bg-white">
                             <div className="flex items-center gap-2.5">
-                               <div className="w-7 h-7 rounded-lg bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-900 border border-slate-300">{i + 1}</div>
+                               <div className="w-7 h-7 rounded-lg bg-rose-500 flex items-center justify-center text-[10px] font-black text-white border border-rose-600">{i + 1}</div>
                                <div>
                                   <p className="text-[9px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
                                   <p className="text-[8px] text-violet-600 font-black uppercase mt-0.5 tracking-widest">
@@ -2842,12 +2867,17 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
       const totalLoaned = contracts.reduce((acc, c) => acc + Number(c.capital), 0);
       const totalInterestGenerated = contracts.reduce((acc, c) => acc + Number(c.total_interest), 0);
       const totalInterestReceived = contracts.reduce((acc, c) => {
-        if (c.status === 'paid') return acc + Number(c.total_interest);
-        return acc + (Number(c.paid_amount) || 0);
+        const tint = Number(c.total_interest) || 0;
+        const paid = Number(c.paid_amount) || 0;
+        if (c.status === 'paid') return acc + tint;
+        return acc + Math.min(tint, paid);
       }, 0);
       const totalCapitalReceived = contracts.reduce((acc, c) => {
-         if (c.status === 'paid') return acc + Number(c.capital);
-         return acc;
+         const cap = Number(c.capital) || 0;
+         const tint = Number(c.total_interest) || 0;
+         const paid = Number(c.paid_amount) || 0;
+         if (c.status === 'paid') return acc + cap;
+         return acc + Math.max(0, paid - tint);
       }, 0);
       const totalToReceive = totalLoaned - totalCapitalReceived;
       const interestToReceive = totalInterestGenerated - totalInterestReceived;

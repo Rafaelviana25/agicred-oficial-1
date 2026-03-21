@@ -325,7 +325,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               <h2 className="text-xl font-black text-slate-900 tracking-tight" style={{ marginTop: '10px' }}>DADOS DE PAGAMENTO</h2>
             </div>
 
-            <form onSubmit={handleCreateQR} className="space-y-6 max-w-md mx-auto" style={{ marginTop: '32px' }}>
+            <form onSubmit={handleCreateQR} className="space-y-6 mx-auto" style={{ marginTop: '32px', width: '300.156px' }}>
               <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 text-center">
                 <p className="text-[10px] font-bold text-violet-600 tracking-widest">PLANO SELECIONADO</p>
                 <p className="text-lg font-black text-violet-900 mt-1">{selectedPlan?.label} - R$ {selectedPlan?.amount.toFixed(2).replace('.', ',')}</p>

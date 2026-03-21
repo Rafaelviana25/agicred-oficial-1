@@ -462,7 +462,7 @@ Pelo menos um número (0 a 9)`;
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4 mt-8 mb-0 mr-0 ml-0 pb-0 pt-0 pr-0 pl-0 h-[261.632px] w-[300.156px]">
           <div className="space-y-1.5">
             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 block">OPERADOR</label>
             <div className="relative">
