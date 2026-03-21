@@ -2105,7 +2105,11 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     setUpdating(true);
     const { error } = await supabase.from('contracts').update({ 
       status: 'paid',
-      paid_amount: Number(contract.total_amount)
+      paid_amount: Number(contract.total_amount),
+      payment_history: {
+        ...(contract.payment_history || {}),
+        settled: new Date().toISOString().split('T')[0]
+      }
     }).eq('id', contract.id);
     setUpdating(false);
     if (!error) { onSuccess(); onClose(); }
@@ -2120,10 +2124,19 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
     const newPaidAmount = Math.min(Number(contract.total_amount), currentPaid + value);
     const isFullyPaid = newPaidAmount >= (Number(contract.total_amount) - 0.01);
 
-    const { error } = await supabase.from('contracts').update({
+    const updateData: any = {
       paid_amount: newPaidAmount,
       status: isFullyPaid ? 'paid' : 'active'
-    }).eq('id', contract.id);
+    };
+
+    if (isFullyPaid) {
+      updateData.payment_history = {
+        ...(contract.payment_history || {}),
+        settled: new Date().toISOString().split('T')[0]
+      };
+    }
+
+    const { error } = await supabase.from('contracts').update(updateData).eq('id', contract.id);
 
     setUpdating(false);
     if (!error) {
@@ -2408,6 +2421,44 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                         </div>
                      );
                   })}
+               </div>
+
+               {/* VALOR CAPITAL field */}
+               <div className={`flex items-center justify-between p-3 rounded-xl border transition-all mt-2 ${contract.status === 'paid' ? 'bg-slate-200 border-slate-300' : 'bg-white border-violet-500 shadow-sm'}`}>
+                  <div className="flex items-center gap-3">
+                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${contract.status === 'paid' ? 'bg-emerald-500 text-white' : 'bg-violet-100 text-violet-600'}`}>
+                        <Coins size={16} />
+                     </div>
+                     <div>
+                        <p className="text-[12px] font-black text-slate-900 uppercase leading-none mt-[-14px] mb-0">VALOR CAPITAL</p>
+                        <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${contract.status === 'paid' ? 'text-slate-500' : 'text-violet-600'}`}>
+                           {contract.status === 'paid' ? 'LIQUIDADO' : 'PENDENTE'}
+                        </p>
+                        {contract.status === 'paid' && contract.payment_history?.settled && (
+                           <p className="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-widest">
+                              PAGO EM {new Date(contract.payment_history.settled + 'T12:00:00').toLocaleDateString('pt-BR')}
+                           </p>
+                        )}
+                     </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                     <p className={`text-[13px] font-black ${contract.status === 'paid' ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                     <button 
+                       onClick={(e) => { e.stopPropagation(); if (contract.status !== 'paid') markAsPaid(); }} 
+                       disabled={contract.status === 'paid' || updating} 
+                       className={`h-8 px-5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${
+                         contract.status === 'paid' 
+                           ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                           : 'bg-rose-500 text-white hover:bg-rose-600' 
+                       }`}
+                     >
+                        {updating ? (
+                          <RefreshCw className="animate-spin" size={12}/>
+                        ) : (
+                          contract.status === 'paid' ? 'PAGO' : 'DEVE'
+                        )}
+                     </button>
+                  </div>
                </div>
             </div>
             
