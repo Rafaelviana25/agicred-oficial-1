@@ -249,12 +249,14 @@ const ProPlanNotification = ({ message, onClose }: { message: string, onClose: (
 };
 
 const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>(() => {
-    const hash = window.location.hash.replace('#', '');
-    return ['overview', 'clients', 'contracts', 'overdue', 'settled'].includes(hash) ? hash as any : 'overview';
-  });
+  const [activeTab, setActiveTab] = useState<'overview' | 'clients' | 'contracts' | 'overdue' | 'settled'>('overview');
 
   useEffect(() => {
+    // Forçar a aba de início ao carregar o dashboard
+    if (window.location.hash !== '#overview') {
+      window.location.hash = 'overview';
+    }
+
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
       if (['overview', 'clients', 'contracts', 'overdue', 'settled'].includes(hash)) {
@@ -2952,23 +2954,23 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
               <div className="col-span-5">
                  <InputWrapper label="CAPITAL (R$)" type="number" step="0.01" value={form.capital} onChange={(v: string) => setForm({...form, capital: v})} inputMode="decimal" />
               </div>
-              <div className="col-span-4">
+              <div className="col-span-3 relative">
                  <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" />
                  {form.interest_amount && (
-                   <p className="text-[10px] text-violet-600 font-black uppercase tracking-widest leading-[12px] h-[21px] mt-[3px] -mb-[23px] pb-0 pt-0 pl-[28px]">
+                   <p className="text-[8px] text-violet-600 font-black uppercase tracking-widest leading-none absolute -bottom-3 left-1">
                      ({(capital > 0 ? (Number(form.interest_amount) / capital) * 100 : 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%)
                    </p>
                  )}
               </div>
-              <div className="col-span-3">
+              <div className="col-span-2">
                  <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" />
               </div>
-           </div>
-           <div className="flex gap-2">
-              <div className="w-1/4">
+              <div className="col-span-2">
                  <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" />
               </div>
-              <div className="flex-1 space-y-1 relative" ref={dateRef}>
+           </div>
+           <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1 relative" ref={dateRef}>
                 <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE INÍCIO</label>
                 <div onClick={() => { setShowDatePicker(!showDatePicker); setShowDueDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[10px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.start_date + 'T12:00:00').toLocaleDateString('pt-BR')}
@@ -2976,7 +2978,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                 </div>
                 {showDatePicker && <DatePickerPopup selectedDate={form.start_date} onDateSelect={(d) => setForm({...form, start_date: d})} onClose={() => setShowDatePicker(false)} />}
               </div>
-              <div className="flex-1 space-y-1 relative" ref={dueDateRef}>
+              <div className="space-y-1 relative" ref={dueDateRef}>
                 <label className="text-[7px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">DATA DE VENCIMENTO</label>
                 <div onClick={() => { setShowDueDatePicker(!showDueDatePicker); setShowDatePicker(false); }} className="w-full px-5 py-3.5 glass-input bg-slate-50 border border-slate-200 rounded-2xl font-black text-slate-900 text-[10px] cursor-pointer flex items-center justify-between shadow-inner">
                   {new Date(form.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}
