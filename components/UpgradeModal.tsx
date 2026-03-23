@@ -93,9 +93,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     setLoading(true);
     setFormErrorMsg(null);
     try {
-      // Forçando o uso do servidor local (AI Studio) para que as novas mensagens de erro detalhadas funcionem.
-      // O servidor antigo no Render estava ocultando o erro real do Mercado Pago.
-      const apiUrl = ''; 
+      // Use VITE_API_URL if available, otherwise default to same origin
+      const apiUrl = import.meta.env.VITE_API_URL || ''; 
       console.log('Gerando PIX via:', `${apiUrl || 'servidor local'}/api/create-payment`);
       
       // Use AbortController for timeout

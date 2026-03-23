@@ -360,7 +360,7 @@ const checkAndSendOverdueNotifications = async () => {
   // -------------------------------------------------------------------------
 
   // Create Payment (PIX)
-  app.post('/api/create-payment', async (req, res) => {
+  app.post(['/api/create-payment', '/api/create-payment/'], async (req, res) => {
     if (!payment) {
       return res.status(500).json({ error: 'Mercado Pago not configured (missing access token)' });
     }

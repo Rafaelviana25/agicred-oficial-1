@@ -1334,30 +1334,33 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
             const totalMesRecebido = parcelasRecebidas + capitalRecebido;
 
             return (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] leading-[18px] text-rose-600 font-black tracking-widest uppercase">TOTAL DO MÊS A RECEBER</span>
-                  <span className="text-[12px] font-black text-rose-600 tracking-tighter">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center px-1" style={{ fontSize: '17px' }}>
+                  <span className="text-rose-600 font-black tracking-widest uppercase" style={{ fontSize: '10px', marginLeft: '7px', marginRight: '0px' }}>TOTAL DO MÊS A RECEBER</span>
+                  <span className="font-black text-rose-600 tracking-tighter" style={{ fontSize: '14px', marginRight: '10px' }}>
                     R$ {totalMesAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex justify-between items-center mt-[-10px] mb-0">
-                  <span className="text-[11px] leading-[18px] mb-[-3px] text-emerald-600 font-black tracking-widest uppercase">TOTAL DO MÊS RECEBIDO</span>
-                  <span className="text-[12px] font-black text-emerald-600 tracking-tighter mb-[-2px]">
-                    R$ {totalMesRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
+
+                <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] text-emerald-600 font-black tracking-widest uppercase">TOTAL DO MÊS RECEBIDO</span>
+                    <span className="text-[14px] font-black text-emerald-600 tracking-tighter">
+                      R$ {totalMesRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 pt-2 border-t border-emerald-100 mt-1 px-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">PARCELAS</span>
+                      <span className="text-[10px] font-black text-emerald-600">R$ {parcelasRecebidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">CAPITAL</span>
+                      <span className="text-[10px] font-black text-emerald-600">R$ {capitalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end mt-1">
-                   <div className="flex items-center gap-3 mt-[-9px]">
-                      <span className="text-[9px] italic text-black font-black tracking-widest uppercase">PARCELAS</span>
-                      <span className="text-[10px] font-black text-emerald-600 text-right">R$ {parcelasRecebidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                   </div>
-                   <div className="flex items-center gap-3 mt-[-3px] mb-[-2px] mr-0">
-                      <span className="text-[9px] italic text-black font-black tracking-widest uppercase">CAPITAL</span>
-                      <span className="text-[10px] font-black text-emerald-600 text-right mb-0">R$ {capitalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                   </div>
-                </div>
-              </>
+              </div>
             );
           })()}
         </div>
@@ -1618,6 +1621,10 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...client });
 
+  const valorTotalEmprestado = contracts.reduce((acc, c) => acc + (Number(c.capital) || 0), 0);
+  const valorTotalRecebido = contracts.reduce((acc, c) => acc + (Number(c.paid_amount) || 0), 0);
+  const valorPendente = contracts.reduce((acc, c) => acc + (Number(c.total_amount) - Number(c.paid_amount || 0)), 0);
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdating(true);
@@ -1644,6 +1651,253 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
     if (!error) {
       onSuccess();
       onClose();
+    }
+  };
+
+  const generateContractsReport = () => {
+    const activeContracts = contracts.filter(c => c.status !== 'paid');
+    if (activeContracts.length === 0) {
+      alert('NÃO HÁ CONTRATOS ATIVOS PARA ESTE CLIENTE.');
+      return;
+    }
+
+    const clientName = client.full_name || 'Cliente';
+    const doc = new jsPDF();
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+
+    // Calculate Summary Totals
+    let totalJurosPagos = 0;
+    let totalJurosAPagar = 0;
+    let totalCapitalEmprestado = 0;
+    let valorTotalAPagar = 0;
+
+    activeContracts.forEach(c => {
+      const installmentValue = Number(c.monthly_interest) || 0;
+      const totalPaid = Number(c.paid_amount || 0);
+      const installmentsPaidCount = installmentValue > 0 
+        ? Math.floor(Math.round(totalPaid * 100) / Math.round(installmentValue * 100)) 
+        : 0;
+      
+      const remainingInstallmentsCount = Math.max(0, Number(c.months) - installmentsPaidCount);
+      const remainingInterestTotal = remainingInstallmentsCount * installmentValue;
+      const totalRemainingDebt = Number(c.total_amount) - totalPaid;
+
+      totalJurosPagos += installmentsPaidCount * installmentValue;
+      totalJurosAPagar += remainingInterestTotal;
+      totalCapitalEmprestado += Number(c.capital);
+      valorTotalAPagar += totalRemainingDebt;
+    });
+    
+    // --- HEADER DESIGN ---
+    const drawHeader = (doc: any, pageNumber: number, totalPages: number) => {
+      // Logo
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.setTextColor(15, 23, 42); // slate-900
+      doc.text("AGI", 20, 25);
+      const agiWidth = doc.getTextWidth("AGI");
+      doc.setTextColor(124, 58, 237); // violet-600
+      doc.text("CRED", 20 + agiWidth, 25);
+      
+      // Right Info
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(100, 116, 139); // slate-500
+      doc.text(`Nº DO TÍTULO: #${activeContracts[0].id.substring(0, 8).toUpperCase()}`, 190, 20, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.text(`EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 190, 28, { align: "right" });
+      
+      // Title
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("RELATÓRIO DE CONTRATOS", 20, 45);
+      
+      // Divider
+      doc.setDrawColor(241, 245, 249); // slate-100
+      doc.line(20, 55, 190, 55);
+    };
+
+    let currentY = 65;
+
+    // Draw First Page Header
+    drawHeader(doc, 1, activeContracts.length);
+
+    // --- SUMMARY SECTION ---
+    autoTable(doc, {
+      startY: currentY,
+      head: [['RESUMO FINANCEIRO ATUAL', 'VALOR']],
+      body: [
+        ['TOTAL DE JUROS JÁ PAGOS', `R$ ${totalJurosPagos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+        ['TOTAL DE JUROS A PAGAR', `R$ ${totalJurosAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+        ['TOTAL DO CAPITAL EMPRESTADO', `R$ ${totalCapitalEmprestado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+        ['VALOR TOTAL A PAGAR (JUROS + CAPITAL)', `R$ ${valorTotalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [124, 58, 237], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 5, font: 'helvetica' },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 100 },
+        1: { fontStyle: 'bold', halign: 'right' }
+      },
+      margin: { left: 20, right: 20 }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 20;
+
+    activeContracts.forEach((c, index) => {
+      if (index > 0) {
+        doc.addPage();
+        currentY = 65;
+        drawHeader(doc, index + 1, activeContracts.length);
+      }
+
+      const installmentValue = Number(c.monthly_interest) || 0;
+      const totalPaid = Number(c.paid_amount || 0);
+      const installmentsPaidCount = installmentValue > 0 
+        ? Math.floor(Math.round(totalPaid * 100) / Math.round(installmentValue * 100)) 
+        : 0;
+
+      const firstDueDate = new Date(c.start_date + 'T12:00:00');
+      if (c.due_dates_override?.[0]) {
+        const overrideDate = new Date(c.due_dates_override[0] + 'T12:00:00');
+        firstDueDate.setTime(overrideDate.getTime());
+      } else {
+        firstDueDate.setMonth(firstDueDate.getMonth() + 1);
+      }
+
+      const statusMap = {
+        'active': 'EM ABERTO',
+        'paid': 'PAGO',
+        'overdue': 'VENCIDO'
+      };
+
+      // Main Contract Info Table (Image Style)
+      autoTable(doc, {
+        startY: currentY,
+        body: [
+          ['CLIENTE', clientName.toUpperCase()],
+          ['DATA DA OPERAÇÃO', new Date(c.start_date + 'T12:00:00').toLocaleDateString('pt-BR')],
+          ['VALOR DO CAPITAL', `R$ ${c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+          ['TAXA DE JUROS', `${c.interest_rate}% AO MÊS`],
+          ['TOTAL DE JUROS', `R$ ${c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+          ['VALOR TOTAL BRUTO', `R$ ${c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+          ['PLANO DE JUROS', `${c.months} PARCELA(S) DE R$ ${installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - TOTAL: R$ ${c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`],
+          ['PRIMEIRO VENCIMENTO', firstDueDate.toLocaleDateString('pt-BR')],
+          ['STATUS ATUAL', statusMap[c.status] || 'EM ABERTO']
+        ],
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 4, font: 'helvetica' },
+        columnStyles: {
+          0: { fillColor: [248, 250, 252], textColor: [71, 85, 105], fontStyle: 'bold', cellWidth: 60 },
+          1: { textColor: [15, 23, 42], fontStyle: 'bold' }
+        },
+        margin: { left: 20, right: 20 }
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 15;
+
+      // Installments Section Title
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("DETALHAMENTO DAS PARCELAS", 20, currentY);
+      currentY += 5;
+
+      // Installments Table
+      const installments = [];
+      for (let i = 0; i < c.months; i++) {
+        const dueDate = new Date(c.start_date + 'T12:00:00');
+        if (c.due_dates_override?.[i]) {
+          const overrideDate = new Date(c.due_dates_override[i] + 'T12:00:00');
+          dueDate.setTime(overrideDate.getTime());
+        } else {
+          dueDate.setMonth(dueDate.getMonth() + (i + 1));
+        }
+        
+        const isPaid = i < installmentsPaidCount || c.status === 'paid';
+        const payDate = c.payment_history?.[i] 
+          ? new Date(c.payment_history[i] + 'T12:00:00').toLocaleDateString('pt-BR') 
+          : (isPaid ? new Date().toLocaleDateString('pt-BR') : '---');
+        const isOverdue = !isPaid && today > dueDate;
+        const status = isPaid ? 'PAGA' : (isOverdue ? 'ATRASADA' : 'PENDENTE');
+
+        installments.push([
+          `${i + 1}/${c.months}`,
+          `R$ ${installmentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          dueDate.toLocaleDateString('pt-BR'),
+          payDate,
+          status
+        ]);
+      }
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [['PARCELA', 'VALOR', 'VENCIMENTO', 'PAGAMENTO', 'STATUS']],
+        body: installments,
+        theme: 'striped',
+        headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 3 },
+        columnStyles: { 
+          4: { fontStyle: 'bold' }
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 4) {
+            const status = data.cell.raw;
+            if (status === 'PAGA') data.cell.styles.textColor = [22, 163, 74];
+            if (status === 'ATRASADA') data.cell.styles.textColor = [220, 38, 38];
+            if (status === 'PENDENTE') data.cell.styles.textColor = [71, 85, 105];
+          }
+        },
+        margin: { left: 20, right: 20 }
+      });
+
+      // Contract Footer (Remaining Capital)
+      const totalRemainingDebt = Number(c.total_amount) - totalPaid;
+      const remainingInstallmentsCount = Math.max(0, Number(c.months) - installmentsPaidCount);
+      const remainingInterestTotal = remainingInstallmentsCount * installmentValue;
+      const remainingCapitalTotal = Math.max(0, totalRemainingDebt - remainingInterestTotal);
+
+      currentY = (doc as any).lastAutoTable.finalY + 10;
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text(`SALDO DE CAPITAL REMANESCENTE: R$ ${remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 190, currentY, { align: 'right' });
+      
+      currentY += 15;
+    });
+
+    // --- FOOTER ---
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Página ${i} de ${pageCount}`, 105, 285, { align: 'center' });
+      doc.text("AGICRED - GESTÃO DE EMPRÉSTIMOS", 20, 285);
+      doc.text(new Date().toLocaleDateString('pt-BR'), 190, 285, { align: 'right' });
+    }
+
+    // Save and Share
+    const fileName = `relatorio_contratos_${clientName.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+    if (Capacitor.isNativePlatform()) {
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      Filesystem.writeFile({
+        path: fileName,
+        data: pdfBase64,
+        directory: Directory.Documents,
+      }).then(async (result) => {
+        await Share.share({
+          title: 'Relatório de Contratos',
+          text: `Relatório detalhado de contratos - ${clientName}`,
+          url: result.uri,
+          dialogTitle: 'Compartilhar Relatório',
+        });
+      });
+    } else {
+      doc.save(fileName);
     }
   };
 
@@ -1692,16 +1946,37 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
                <InfoItem icon={<MapPin />} label="LOCALIZAÇÃO" value={`${client.address || ''} ${client.city || ''}`.trim() || 'NÃO INFORMADO'} />
             </div>
 
-            <div className="pt-4 border-t border-slate-200 space-y-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2">TÍTULOS VINCULADOS</h3>
+            <div className="pt-4 border-t border-slate-200 space-y-4">
+              <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR TOTAL EMPRESTADO</span>
+                  <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {valorTotalEmprestado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR TOTAL RECEBIDO</span>
+                  <span className="text-[11px] font-black text-emerald-600 tracking-tighter">R$ {valorTotalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center px-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR PENDENTE</span>
+                  <span className="text-[11px] font-black text-violet-600 tracking-tighter">R$ {valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={generateContractsReport} 
+                  className="flex-1 bg-violet-100 text-violet-600 px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-200"
+                >
+                  <FileEdit size={12}/> RELATORIO
+                </button>
                 <button 
                   onClick={() => onAddContract(client.id)} 
-                  className="bg-violet-600 text-white px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-700"
+                  className="flex-1 bg-violet-600 text-white px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-700"
                 >
                   <Plus size={12}/> NOVO CONTRATO
                 </button>
               </div>
+              <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2">TÍTULOS VINCULADOS</h3>
               <div className="bg-slate-50 rounded-2xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
                 {contracts.length > 0 ? contracts.map(c => (
                   <div key={c.id} onClick={() => onSelectContract(c)} className="p-3.5 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group">
@@ -2891,138 +3166,117 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     setGeneratingReport(true);
     try {
       const doc = new jsPDF();
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('pt-BR');
+      const dateStr = new Date().toLocaleDateString('pt-BR');
+      const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       
-      // Header
-      doc.setFillColor(124, 58, 237); // Violet-600
-      doc.rect(0, 0, 210, 40, 'F');
+      // --- MODERN HEADER ---
+      doc.setFillColor(17, 24, 39); // Dark slate
+      doc.rect(0, 0, 210, 45, 'F');
       
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
       doc.setFont('helvetica', 'bold');
-      doc.text('AGICRED', 20, 25);
+      doc.text('AGICRED', 20, 22);
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('RELATÓRIO GERAL DETALHADO', 20, 32);
+      doc.setTextColor(156, 163, 175);
+      doc.text('SISTEMA DE GESTÃO DE EMPRÉSTIMOS', 20, 28);
       
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(12);
-      doc.text(user.full_name, 190, 15, { align: 'right' });
-      doc.setFontSize(10);
-      doc.text(user.email, 190, 22, { align: 'right' });
-      doc.text(user.phone, 190, 29, { align: 'right' });
-      doc.text(`Data: ${dateStr}`, 190, 36, { align: 'right' });
-      
-      // Calculate Stats
-      const totalLoaned = contracts.reduce((acc, c) => acc + Number(c.capital), 0);
-      const totalInterestGenerated = contracts.reduce((acc, c) => acc + Number(c.total_interest), 0);
-      const totalInterestReceived = contracts.reduce((acc, c) => {
-        const tint = Number(c.total_interest) || 0;
-        const paid = Number(c.paid_amount) || 0;
-        if (c.status === 'paid') return acc + tint;
-        return acc + Math.min(tint, paid);
-      }, 0);
-      const totalCapitalReceived = contracts.reduce((acc, c) => {
-         const cap = Number(c.capital) || 0;
-         const tint = Number(c.total_interest) || 0;
-         const paid = Number(c.paid_amount) || 0;
-         if (c.status === 'paid') return acc + cap;
-         return acc + Math.max(0, paid - tint);
-      }, 0);
-      const totalToReceive = totalLoaned - totalCapitalReceived;
-      const interestToReceive = totalInterestGenerated - totalInterestReceived;
-      
-      // Chart Section (Pie Chart) - Improved Rendering
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('RESUMO FINANCEIRO', 20, 55);
+      doc.text('RELATÓRIO GERAL DE CARTEIRA', 190, 22, { align: 'right' });
       
-      const startY = 65;
-      const pieX = 60;
-      const pieY = 90;
-      const pieRadius = 25;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(156, 163, 175);
+      doc.text(`GERADO EM: ${dateStr} ÀS ${timeStr}`, 190, 28, { align: 'right' });
       
-      const data = [
-        { label: 'Capital Emprestado', value: totalLoaned, color: [139, 92, 246] }, // Violet
-        { label: 'Capital a Receber', value: totalToReceive, color: [59, 130, 246] }, // Blue
-        { label: 'Juros Recebidos', value: totalInterestReceived, color: [16, 185, 129] }, // Emerald
-        { label: 'Juros a Receber', value: interestToReceive, color: [244, 63, 94] } // Rose
+      doc.setFontSize(10);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`OPERADOR: ${user.full_name?.toUpperCase() || 'N/A'}`, 20, 38);
+      
+      // --- SUMMARY SECTION ---
+      let startY = 55;
+      const totalCapital = contracts.reduce((acc, c) => acc + Number(c.capital), 0);
+      const totalInterest = contracts.reduce((acc, c) => acc + Number(c.total_interest), 0);
+      const totalPaid = contracts.reduce((acc, c) => acc + (Number(c.paid_amount) || 0), 0);
+      const totalToReceive = contracts.reduce((acc, c) => {
+        if (c.status === 'paid') return acc;
+        return acc + (Number(c.total_amount) - (Number(c.paid_amount) || 0));
+      }, 0);
+      
+      const stats = [
+        { label: 'CAPITAL TOTAL', value: totalCapital, color: [79, 70, 229] },
+        { label: 'JUROS TOTAL', value: totalInterest, color: [219, 39, 119] },
+        { label: 'TOTAL RECEBIDO', value: totalPaid, color: [5, 150, 105] },
+        { label: 'A RECEBER', value: totalToReceive, color: [220, 38, 38] }
       ];
       
-      const totalValue = data.reduce((acc, item) => acc + item.value, 0);
-      let startAngle = 0;
-      
-      // Draw Pie Chart with Arcs
-      if (totalValue > 0) {
-        data.forEach(item => {
-          if (item.value <= 0) return;
-          const sliceAngle = (item.value / totalValue) * 2 * Math.PI;
-          const endAngle = startAngle + sliceAngle;
-          
-          // Draw slice using many small lines to simulate arc
-          const points: any[] = [[pieX, pieY]]; // Start at center
-          const step = 0.05; // Resolution
-          
-          for (let a = startAngle; a < endAngle; a += step) {
-             points.push([
-               pieX + pieRadius * Math.cos(a),
-               pieY + pieRadius * Math.sin(a)
-             ]);
-          }
-          // Ensure the last point is exactly at endAngle
-          points.push([
-             pieX + pieRadius * Math.cos(endAngle),
-             pieY + pieRadius * Math.sin(endAngle)
-          ]);
-          
-          // Convert to PDF lines format
-          // doc.lines expects relative coordinates from the first point, which is annoying.
-          // Instead, we can construct a path string or use triangles fan.
-          // Simpler approach for jsPDF: use lines with 'F' (fill) and absolute coords if possible, 
-          // but doc.lines uses relative.
-          // Let's use the raw PDF construction for circles or a polyfill approach.
-          // Actually, constructing a polygon is easier.
-          
-          const polyPoints = points.map(p => ({ x: p[0], y: p[1] }));
-          
-          doc.setFillColor(item.color[0], item.color[1], item.color[2]);
-          
-          // Construct path manually
-          // Move to center
-          let path = ` ${pieX.toFixed(2)} ${ (297 - pieY).toFixed(2) } m`; // PDF uses bottom-left origin usually, but jsPDF abstracts this. 
-          // Wait, jsPDF has a context-like API? No, standard API.
-          // Let's use lines() with correct relative mapping.
-          
-          const lines = points.slice(1).map((p, i) => {
-             const prev = i === 0 ? [pieX, pieY] : points[i];
-             return [p[0] - prev[0], p[1] - prev[1]];
-          });
-          
-          doc.lines(lines, pieX, pieY, [1, 1], 'F', true);
-          
-          startAngle = endAngle;
-        });
-      } else {
-         doc.setDrawColor(200, 200, 200);
-         doc.circle(pieX, pieY, pieRadius, 'S');
-         doc.text('Sem dados', pieX - 10, pieY);
-      }
-      
-      // Legend
-      let legendY = 65;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      data.forEach(item => {
-         doc.setFillColor(item.color[0], item.color[1], item.color[2]);
-         doc.rect(100, legendY, 4, 4, 'F');
-         doc.text(`${item.label}: R$ ${item.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 108, legendY + 3);
-         legendY += 8;
+      stats.forEach((stat, i) => {
+        const x = 20 + 47 * i;
+        doc.setFillColor(249, 250, 251);
+        doc.setDrawColor(229, 231, 235);
+        doc.roundedRect(x, startY, 42, 20, 3, 3, 'FD');
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(107, 114, 128);
+        doc.text(stat.label, x + 4, startY + 6);
+        doc.setFontSize(10);
+        doc.setTextColor(stat.color[0], stat.color[1], stat.color[2]);
+        doc.text(`R$ ${stat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, x + 4, startY + 14);
       });
       
-      let currentY = startY + 65;
+      startY += 35;
+      // Pie Chart
+      const pieX = 55;
+      const pieY = startY + 25;
+      const pieRadius = 20;
+      const pieData = [
+        { label: 'RECEBIDO', value: totalPaid, color: [16, 185, 129] },
+        { label: 'A RECEBER', value: totalToReceive, color: [239, 68, 68] }
+      ];
+      
+      const total = totalPaid + totalToReceive;
+      let startAngle = 0;
+      if (total > 0) {
+        pieData.forEach(item => {
+          const sliceAngle = (item.value / total) * 2 * Math.PI;
+          const endAngle = startAngle + sliceAngle;
+          doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+          const segments = 30;
+          const points = [[0, 0]];
+          for (let i = 0; i <= segments; i++) {
+            const angle = startAngle + (i / segments) * sliceAngle;
+            points.push([pieRadius * Math.cos(angle), pieRadius * Math.sin(angle)]);
+          }
+          points.push([0, 0]);
+          const lines = points.slice(1).map((p, i) => {
+             const prev = i === 0 ? [0, 0] : points[i];
+             return [p[0] - prev[0], p[1] - prev[1]];
+          });
+          doc.lines(lines, pieX, pieY, [1, 1], 'F', true);
+          startAngle = endAngle;
+        });
+      }
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(17, 24, 39);
+      doc.text('DISTRIBUIÇÃO FINANCEIRA', 100, startY + 5);
+      let legendY = startY + 15;
+      pieData.forEach(item => {
+        doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+        doc.rect(100, legendY - 3, 4, 4, 'F');
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(75, 85, 99);
+        const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0.0';
+        doc.text(`${item.label}: R$ ${item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${percentage}%)`, 108, legendY);
+        legendY += 8;
+      });
+      
+      let currentY = startY + 60;
       
       // Helper to calculate installments
       const getInstallments = (c: Contract) => {
@@ -3051,8 +3305,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           let payDate = '-';
           if (isPaid && c.payment_history && c.payment_history[i]) {
              payDate = new Date(c.payment_history[i] + 'T12:00:00').toLocaleDateString('pt-BR');
-          } else if (isPaid && c.status === 'paid') {
-             payDate = new Date(c.end_date + 'T12:00:00').toLocaleDateString('pt-BR'); // Fallback
+          } else if (isPaid) {
+             // Fallback: use settled date, end date (if fully paid) or today
+             const fallbackDate = c.payment_history?.settled || (c.status === 'paid' ? c.end_date : new Date().toISOString().split('T')[0]);
+             payDate = new Date(fallbackDate + 'T12:00:00').toLocaleDateString('pt-BR');
           }
 
           installments.push({
@@ -3066,174 +3322,69 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
         return installments;
       };
 
-      // Group by Client and Sort
       const clientsWithContracts = clients.map(client => {
-         const clientContracts = contracts.filter(c => c.client_id === client.id);
-         
-         // Calculate Remaining Balance for Client
-         let remCapital = 0;
-         let remInterest = 0;
-         let remTotal = 0;
-         let hasOverdue = false;
-         
-         clientContracts.forEach(c => {
-             const installments = getInstallments(c);
-             if (installments.some(i => i.status === 'VENCIDO')) hasOverdue = true;
-             
-             if (c.status === 'paid') return;
-             
-             const totalAmt = Number(c.total_amount);
-             const paidAmt = Number(c.paid_amount) || 0;
-             const totalInt = Number(c.total_interest);
-             const cap = Number(c.capital);
-             
-             const remaining = totalAmt - paidAmt;
-             remTotal += remaining;
-             
-             // Interest first logic
-             const paidInt = Math.min(paidAmt, totalInt);
-             const paidCap = Math.max(0, paidAmt - totalInt);
-             
-             remInterest += (totalInt - paidInt);
-             remCapital += (cap - paidCap);
-         });
-
-         return { 
-            client, 
-            contracts: clientContracts, 
-            stats: { remCapital, remInterest, remTotal },
-            hasOverdue
-         };
+        const clientContracts = contracts.filter(c => c.client_id === client.id);
+        let remTotal = 0;
+        let hasOverdue = false;
+        clientContracts.forEach(c => {
+          const installments = getInstallments(c);
+          if (installments.some(i => i.status === 'VENCIDO')) hasOverdue = true;
+          if (c.status !== 'paid') remTotal += (Number(c.total_amount) - (Number(c.paid_amount) || 0));
+        });
+        return { client, contracts: clientContracts, remTotal, hasOverdue };
       })
-      .filter(g => g.contracts.length > 0 || g.stats.remTotal > 0)
+      .filter(g => g.contracts.length > 0)
       .sort((a, b) => {
-          // Sort: Clients without overdue first, Clients WITH overdue last
-          if (a.hasOverdue && !b.hasOverdue) return 1;
-          if (!a.hasOverdue && b.hasOverdue) return -1;
-          return a.client.full_name.localeCompare(b.client.full_name);
+        if (a.hasOverdue && !b.hasOverdue) return -1;
+        if (!a.hasOverdue && b.hasOverdue) return 1;
+        return a.client.full_name.localeCompare(b.client.full_name);
       });
 
-      if (clientsWithContracts.length > 0) {
-        doc.setFontSize(14);
+      clientsWithContracts.forEach(group => {
+        if (currentY > 250) { doc.addPage(); currentY = 20; }
+        doc.setFillColor(group.hasOverdue ? 254 : 249, group.hasOverdue ? 242 : 250, group.hasOverdue ? 242 : 251);
+        doc.setDrawColor(group.hasOverdue ? 252 : 229, group.hasOverdue ? 165 : 231, group.hasOverdue ? 165 : 235);
+        doc.roundedRect(14, currentY, 182, 18, 2, 2, 'FD');
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text('DETALHAMENTO POR CLIENTE', 20, currentY);
-        currentY += 10;
+        doc.setTextColor(group.hasOverdue ? 153 : 17, group.hasOverdue ? 27 : 24, group.hasOverdue ? 27 : 39);
+        doc.text(group.client.full_name.toUpperCase(), 20, currentY + 7);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(107, 114, 128);
+        doc.text(`CPF: ${group.client.cpf || '-'} | TEL: ${group.client.phone || '-'}`, 20, currentY + 13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(group.hasOverdue ? 220 : 75, group.hasOverdue ? 38 : 85, group.hasOverdue ? 38 : 99);
+        doc.text(`SALDO: R$ ${group.remTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 190, currentY + 10, { align: 'right' });
+        currentY += 25;
         
-        clientsWithContracts.forEach(group => {
-           if (currentY > 230) { doc.addPage(); currentY = 20; }
-           
-           // Client Header
-           // If overdue, use a reddish background to highlight, otherwise gray
-           const headerColor = group.hasOverdue ? [254, 226, 226] : [243, 244, 246]; // Red-100 vs Gray-100
-           
-           doc.setFillColor(headerColor[0], headerColor[1], headerColor[2]);
-           doc.rect(14, currentY - 6, 182, 24, 'F'); 
-           
-           doc.setFontSize(11);
-           doc.setFont('helvetica', 'bold');
-           doc.setTextColor(17, 24, 39);
-           
-           const overdueLabel = group.hasOverdue ? ' (POSSUI VENCIMENTOS)' : '';
-           const nameColor = group.hasOverdue ? [220, 38, 38] : [17, 24, 39];
-           
-           doc.setTextColor(nameColor[0], nameColor[1], nameColor[2]);
-           doc.text(`CLIENTE: ${group.client.full_name}${overdueLabel}`, 20, currentY);
-           
-           doc.setFontSize(8);
-           doc.setFont('helvetica', 'normal');
-           doc.setTextColor(17, 24, 39);
-           doc.text(`CPF: ${group.client.cpf || '-'} | TEL: ${group.client.phone || '-'}`, 20, currentY + 5);
-           
-           // Client Stats
-           doc.setFont('helvetica', 'bold');
-           doc.setTextColor(100, 100, 100);
-           doc.text('A PAGAR:', 20, currentY + 12);
-           
-           doc.setTextColor(139, 92, 246); // Violet
-           doc.text(`CAPITAL: R$ ${group.stats.remCapital.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 40, currentY + 12);
-           
-           doc.setTextColor(244, 63, 94); // Rose
-           doc.text(`JUROS: R$ ${group.stats.remInterest.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 90, currentY + 12);
-           
-           doc.setTextColor(17, 24, 39); // Black
-           doc.text(`TOTAL: R$ ${group.stats.remTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 140, currentY + 12);
-           
-           currentY += 25;
-           
-           // List contracts
-           const sortedContracts = group.contracts.sort((a, b) => {
-               // Sort contracts: Overdue ones last within the client too, or first?
-               // Usually user wants to see problems first or last. User said "VENCIDO IRÁ PARA O FINAL".
-               // Let's put overdue contracts at the end of the client's list too.
-               const aInst = getInstallments(a);
-               const bInst = getInstallments(b);
-               const aOver = aInst.some(i => i.status === 'VENCIDO');
-               const bOver = bInst.some(i => i.status === 'VENCIDO');
-               if (aOver && !bOver) return 1;
-               if (!aOver && bOver) return -1;
-               return 0;
-           });
-
-           if (sortedContracts.length === 0) {
-               doc.setFontSize(8);
-               doc.setFont('helvetica', 'italic');
-               doc.setTextColor(100, 100, 100);
-               doc.text('(Sem contratos ativos)', 20, currentY);
-               currentY += 10;
-           }
-           
-           sortedContracts.forEach(c => {
-               if (currentY > 250) { doc.addPage(); currentY = 20; }
-               
-               const installments = getInstallments(c);
-               const isOverdue = installments.some(i => i.status === 'VENCIDO');
-               const isPaid = c.status === 'paid';
-               
-               let statusColor = [139, 92, 246]; // Violet (Active)
-               let statusText = 'ATIVO';
-               
-               if (isPaid) {
-                  statusColor = [16, 185, 129]; // Green
-                  statusText = 'LIQUIDADO';
-               } else if (isOverdue) {
-                  statusColor = [220, 38, 38]; // Red
-                  statusText = 'VENCIDO';
-               }
-               
-               doc.setFontSize(9);
-               doc.setFont('helvetica', 'bold');
-               doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-               doc.text(`CONTRATO (${statusText}) - Início: ${new Date(c.start_date).toLocaleDateString('pt-BR')} | Valor: R$ ${Number(c.capital).toLocaleString('pt-BR', {minimumFractionDigits: 2})}`, 20, currentY);
-               doc.setTextColor(0, 0, 0);
-               currentY += 5;
-               
-               autoTable(doc, {
-                 startY: currentY,
-                 head: [['#', 'Vencimento', 'Valor', 'Status', 'Data Pagamento']],
-                 body: installments.map(inst => [
-                   inst.number,
-                   inst.dueDate,
-                   `R$ ${inst.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`,
-                   inst.status,
-                   inst.payDate
-                 ]),
-                 styles: { fontSize: 8, cellPadding: 2 },
-                 headStyles: { fillColor: statusColor as [number, number, number], fontSize: 8 },
-                 columnStyles: {
-                    0: { cellWidth: 15 },
-                    1: { cellWidth: 35 },
-                    2: { cellWidth: 35 },
-                    3: { cellWidth: 35 },
-                    4: { cellWidth: 35 }
-                 },
-                 margin: { left: 20 }
-               });
-               currentY = (doc as any).lastAutoTable.finalY + 10;
-           });
-           
-           currentY += 5; // Spacing between clients
+        group.contracts.forEach(c => {
+          if (currentY > 250) { doc.addPage(); currentY = 20; }
+          const installments = getInstallments(c);
+          const isOverdue = installments.some(i => i.status === 'VENCIDO');
+          const isPaid = c.status === 'paid';
+          let statusColor = [79, 70, 229];
+          let statusText = 'ATIVO';
+          if (isPaid) { statusColor = [16, 185, 129]; statusText = 'LIQUIDADO'; }
+          else if (isOverdue) { statusColor = [220, 38, 38]; statusText = 'VENCIDO'; }
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+          doc.text(`${statusText} - CAPITAL: R$ ${Number(c.capital).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | INÍCIO: ${new Date(c.start_date).toLocaleDateString('pt-BR')}`, 20, currentY);
+          autoTable(doc, {
+            startY: currentY + 3,
+            head: [['#', 'VENCIMENTO', 'VALOR', 'STATUS', 'PAGAMENTO']],
+            body: installments.map(inst => [inst.number, inst.dueDate, `R$ ${inst.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, inst.status, inst.payDate]),
+            styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
+            headStyles: { fillColor: statusColor as [number, number, number], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+            columnStyles: { 0: { cellWidth: 10 }, 1: { cellWidth: 35 }, 2: { cellWidth: 40 }, 3: { cellWidth: 35 }, 4: { cellWidth: 35 } },
+            margin: { left: 20, right: 20 }
+          });
+          currentY = (doc as any).lastAutoTable.finalY + 12;
         });
-      }
+        currentY += 5;
+      });
       
       const safeFileName = user.full_name ? user.full_name.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'usuario';
       const fileName = `relatorio_geral_${safeFileName}_${dateStr.replace(/\//g, '-')}.pdf`;
