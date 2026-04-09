@@ -114,7 +114,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     if (threeDaysBefore.getTime() > baseDate.getTime()) {
       notificationsToSchedule.push({
         title: 'Renovação de Plano',
-        body: 'ATENÇÃO! FALTAM 3 DIAS PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+        body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 3 DIAS',
         id: 5003,
         channelId: channelId,
         smallIcon: 'ic_stat_notification',
@@ -133,7 +133,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
     if (twoDaysBefore.getTime() > baseDate.getTime()) {
       notificationsToSchedule.push({
         title: 'Renovação de Plano',
-        body: 'ATENÇÃO! FALTAM 2 DIAS PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+        body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 2 DIAS',
         id: 5002,
         channelId: channelId,
         smallIcon: 'ic_stat_notification',
@@ -154,7 +154,7 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
       if (oneDayBefore.getTime() > baseDate.getTime()) {
         notificationsToSchedule.push({
           title: 'Renovação de Plano',
-          body: 'ATENÇÃO! FALTA 1 DIA PARA FINALIZAR SEU PLANO PRO, FAÇA A RENOVAÇÃO',
+          body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 1 DIA',
           id: 5010 + idx,
           channelId: channelId,
           smallIcon: 'ic_stat_notification',
