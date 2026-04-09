@@ -357,6 +357,39 @@ const checkAndSendOverdueNotifications = async () => {
     await checkExpiredTrials();
     res.json({ success: true, message: 'Trial check triggered' });
   });
+
+  // --- DELETE ACCOUNT ENDPOINT ---
+  app.post('/api/delete-account', async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      if (!supabase) return res.status(500).json({ error: 'Supabase not initialized' });
+
+      console.log(`Deleting account for user: ${userId}`);
+
+      // 1. Delete user from auth (requires service role)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      if (authError) {
+        console.error('Error deleting user from auth:', authError);
+        return res.status(500).json({ error: `Auth deletion failed: ${authError.message}` });
+      }
+
+      // 2. Delete user data from profiles (cascading deletes should handle other tables if configured, 
+      // but we'll be explicit if needed. Profiles usually has a FK to auth.users)
+      // Note: If RLS is on, the service role bypasses it.
+      const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId);
+      if (profileError) {
+        console.error('Error deleting user profile:', profileError);
+        // We don't return error here because auth is already gone, 
+        // but we should log it.
+      }
+
+      return res.json({ success: true, message: 'Account deleted successfully' });
+    } catch (e: any) {
+      console.error('Exception in delete account:', e);
+      return res.status(500).json({ error: `Exception: ${e.message}` });
+    }
+  });
   // -------------------------------------------------------------------------
 
   // Create Payment (PIX)
@@ -536,50 +569,8 @@ const checkAndSendOverdueNotifications = async () => {
       const paymentId = req.params.id;
       const paymentInfo = await payment.get({ id: paymentId });
       
-      // If approved, ensure user is updated (Manual Fallback)
-      if (paymentInfo.status === 'approved') {
-          const userId = paymentInfo.metadata.user_id;
-          const planType = paymentInfo.metadata.plan_type || 'monthly';
-          
-          if (userId && supabase) {
-             // Check if user is already PRO to avoid redundant updates if webhook worked
-             const { data: profile } = await supabase.from('profiles').select('is_pro, pro_expires_at, pro_started_at').eq('id', userId).single();
-             
-             // We check if the payment was already processed by comparing metadata or just checking if it's already updated
-             // For simplicity, we'll check if we need to update. 
-             // Note: In a real app, we'd track payment IDs in a table to prevent double-processing.
-             
-             console.log(`Manual check: Upgrading user ${userId} for payment ${paymentId}`);
-             const now = new Date();
-             let baseDate = now;
-
-             if (profile?.pro_expires_at) {
-                const currentExpiry = new Date(profile.pro_expires_at);
-                if (currentExpiry > now) {
-                   baseDate = currentExpiry;
-                }
-             }
-
-             let expiryDate = new Date(baseDate);
-             
-             if (planType === 'annual') expiryDate.setFullYear(baseDate.getFullYear() + 1);
-             else if (planType === 'semiannual') expiryDate.setMonth(baseDate.getMonth() + 6);
-             else if (planType === 'quarterly') expiryDate.setMonth(baseDate.getMonth() + 3);
-             else expiryDate.setMonth(baseDate.getMonth() + 1);
-
-             const updateData: any = { 
-                is_pro: true,
-                is_trial: false,
-                pro_expires_at: expiryDate.toISOString()
-             };
-
-             if (!profile?.pro_started_at) {
-                updateData.pro_started_at = now.toISOString();
-             }
-
-             await supabase.from('profiles').update(updateData).eq('id', userId);
-          }
-      }
+      // If approved, we rely on the webhook to update the database.
+      // We just return the status to the frontend.
       
       res.json({
         status: paymentInfo.status,
