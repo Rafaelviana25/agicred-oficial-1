@@ -2379,17 +2379,29 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   };
 
   const markAsPaid = async () => {
+    console.log("markAsPaid called");
     setUpdating(true);
-    const { error } = await supabase.from('contracts').update({ 
-      status: 'paid',
-      paid_amount: Number(contract.total_amount),
-      payment_history: {
-        ...(contract.payment_history || {}),
-        settled: new Date().toISOString().split('T')[0]
+    try {
+      console.log("Updating contract:", contract.id);
+      const { error } = await supabase.from('contracts').update({ 
+        status: 'paid',
+        paid_amount: Number(contract.total_amount)
+      }).eq('id', contract.id);
+      
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
       }
-    }).eq('id', contract.id);
-    setUpdating(false);
-    if (!error) { onSuccess(); onClose(); }
+      
+      console.log("Update successful");
+      onSuccess();
+      onClose();
+    } catch (e: any) {
+      console.error("Error marking as paid:", e);
+      alert("Erro ao liquidar contrato: " + e.message);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handlePartialPayment = async () => {
@@ -2955,7 +2967,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                  <InputWrapper label="CAPITAL (R$)" type="number" step="0.01" value={form.capital} onChange={(v: string) => setForm({...form, capital: v})} inputMode="decimal" />
               </div>
               <div className="col-span-3 relative">
-                 <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" />
+                 <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" style={{ marginTop: '4px', marginRight: '0px', marginBottom: '0px', marginLeft: '-2px' }} />
                  {form.interest_amount && (
                    <p className="text-[8px] text-violet-600 font-black uppercase tracking-widest leading-none absolute -bottom-3 left-1">
                      ({(capital > 0 ? (Number(form.interest_amount) / capital) * 100 : 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%)
@@ -2963,10 +2975,10 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                  )}
               </div>
               <div className="col-span-2">
-                 <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" />
+                 <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" style={{ width: '49.5px', marginLeft: '-5px' }} />
               </div>
               <div className="col-span-2">
-                 <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" />
+                 <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" style={{ width: '49.5px', marginLeft: '-5px' }} />
               </div>
            </div>
            <div className="grid grid-cols-2 gap-2">
@@ -3034,13 +3046,14 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
   );
 };
 
-const InputWrapper = ({ label, type = "text", value, onChange, placeholder, step, inputMode }: any) => (
+const InputWrapper = ({ label, type = "text", value, onChange, placeholder, step, inputMode, style }: any) => (
   <div className="space-y-1 text-slate-900">
     <label className="text-[8px] font-black text-slate-500 ml-1 tracking-widest uppercase whitespace-nowrap">{label}</label>
     <input 
       type={type} 
       step={step} 
       inputMode={inputMode}
+      style={style}
       className="w-full px-4 py-2.5 glass-input bg-slate-50 border border-slate-200 rounded-xl outline-none font-black text-slate-900 text-[10px] uppercase shadow-inner placeholder:text-slate-400 transition-all focus:bg-white focus:border-violet-500" 
       placeholder={placeholder} 
       value={value} 
@@ -3430,6 +3443,37 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     onClose(); 
   };
 
+  const handleDeleteAccount = async () => {
+    if (!confirm('Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados, exceto seu e-mail.')) return;
+
+    try {
+      // 1. Delete contracts
+      await supabase.from('contracts').delete().eq('user_id', user.id);
+      // 2. Delete clients
+      await supabase.from('clients').delete().eq('user_id', user.id);
+      // 3. Clear profile fields
+      await supabase.from('profiles').update({
+        full_name: '',
+        cpf: '',
+        phone: '',
+        is_pro: false,
+        is_trial: false,
+        pro_expires_at: null,
+        pro_started_at: null,
+        trial_started_at: null,
+        trial_expires_at: null,
+        birth_date: null,
+      }).eq('id', user.id);
+
+      // 4. Sign out
+      await supabase.auth.signOut();
+      onClose();
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao excluir conta.');
+    }
+  };
+
   const getRemainingProTime = () => {
     if (!user.pro_expires_at) return null;
     const now = new Date();
@@ -3772,6 +3816,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           </div>
         </div>
         <button type="button" onClick={handleLogout} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><LogOut size={16}/> SAIR DA CONTA</button>
+        <button type="button" onClick={handleDeleteAccount} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><Trash2 size={16}/> EXCLUIR MINHA CONTA</button>
       </div>
     </div>
   );

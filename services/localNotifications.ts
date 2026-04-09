@@ -33,9 +33,13 @@ export const scheduleContractNotifications = async (contracts: Contract[], clien
   if (pending.notifications.length > 0) {
     await LocalNotifications.cancel(pending);
   }
-  if (!isEnabled) return;
-
+  
   const now = new Date();
+  const isPro = proExpiresAt && new Date(proExpiresAt) > now;
+  const isTrial = trialExpiresAt && new Date(trialExpiresAt) > now;
+  
+  if (!isEnabled || (!isPro && !isTrial)) return;
+
   const notificationsToSchedule: any[] = [];
   let idCounter = 1;
 

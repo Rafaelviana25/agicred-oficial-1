@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { supabase } from '../services/supabase';
-import { CheckCircle2, ShieldCheck, QrCode, RefreshCw, Copy, Check, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, QrCode, RefreshCw, Copy, Check, Mail, ArrowLeft, X } from 'lucide-react';
 
 interface UpgradeModalProps {
   user: UserProfile;
@@ -99,7 +99,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
       
       // Use AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20s
+      const timeoutId = setTimeout(() => controller.abort(), 40000); // Increased to 40s
 
       const response = await fetch(`${apiUrl}/api/create-payment`, {
         method: 'POST',
@@ -219,13 +219,15 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
       <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
         {!isPaid && (
           <button 
+            type="button"
             onClick={() => {
               if (step === 'plans') onClose();
               else setStep('plans');
             }} 
-            className="absolute top-6 right-6 text-slate-400 hover:text-slate-900 transition z-20 text-xl"
+            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 transition z-20 bg-slate-100 rounded-xl hover:bg-slate-200"
+            aria-label="Fechar"
           >
-            ✕
+            <X size={24} />
           </button>
         )}
         {isPaid ? (
@@ -313,7 +315,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             </div>
 
             {!isPro && (
-              <button onClick={onClose} className="w-full max-w-md bg-emerald-500 text-white py-4 rounded-2xl text-[11px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-8 shadow-lg shadow-emerald-500/20">
+              <button type="button" onClick={onClose} className="w-full max-w-md bg-emerald-500 text-white py-4 rounded-2xl text-[11px] font-black tracking-widest hover:bg-emerald-600 transition-all mt-8 shadow-lg shadow-emerald-500/20">
                 CONTINUAR COM CONTA GRÁTIS (LIMITADA)
               </button>
             )}

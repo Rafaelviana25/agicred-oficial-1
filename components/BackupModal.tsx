@@ -176,7 +176,7 @@ export const BackupModal: React.FC<BackupModalProps> = ({ onClose, userId }) => 
       <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">BACKUP & RESTAURAÇÃO</h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-colors">
+          <button type="button" onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-colors">
             <X size={20} />
           </button>
         </div>
