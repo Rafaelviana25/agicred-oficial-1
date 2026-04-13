@@ -63,16 +63,22 @@ async function startServer() {
 
     if (type === 'payment') {
       try {
-        const paymentId = data.id;
+        const paymentId = String(data.id);
         console.log(`Processing payment ID: ${paymentId}`);
         
-        const paymentInfo = await payment.get({ id: paymentId });
-        console.log(`Payment info:`, JSON.stringify(paymentInfo));
-        console.log(`Payment status: ${paymentInfo.status}`);
+        // Simple in-memory idempotency check
+        if ((global as any).processedPayments?.has(paymentId)) {
+          console.log(`Payment ${paymentId} already processed. Skipping.`);
+          return res.status(200).send('Payment already processed');
+        }
+        if (!(global as any).processedPayments) (global as any).processedPayments = new Set<string>();
+        (global as any).processedPayments.add(paymentId);
 
+        const paymentInfo = await payment.get({ id: paymentId });
+        
         if (paymentInfo.status === 'approved') {
           const userId = paymentInfo.metadata.user_id;
-          const planType = paymentInfo.metadata.plan_type || 'monthly'; // Default to monthly if not specified
+          const planType = paymentInfo.metadata.plan_type || 'monthly';
           console.log(`Payment approved for user: ${userId}, Plan: ${planType}`);
 
           if (userId) {
@@ -87,7 +93,6 @@ async function startServer() {
             const now = new Date();
             let baseDate = now;
             
-            // If user already has a PRO plan that hasn't expired, add to it
             if (currentProfile?.pro_expires_at) {
               const currentExpiry = new Date(currentProfile.pro_expires_at);
               if (currentExpiry > now) {
@@ -104,7 +109,6 @@ async function startServer() {
             } else if (planType === 'quarterly') {
               expiryDate.setMonth(baseDate.getMonth() + 3);
             } else {
-              // Default fallback (e.g. 1 month)
               expiryDate.setMonth(baseDate.getMonth() + 1);
             }
 
@@ -118,25 +122,18 @@ async function startServer() {
               updateData.pro_started_at = now.toISOString();
             }
 
-            // Update user profile to PRO with expiry date
-            const { error, data: updatedProfile } = await supabase
+            const { error } = await supabase
               .from('profiles')
               .update(updateData)
-              .eq('id', userId)
-              .select();
+              .eq('id', userId);
 
             if (error) {
+              (global as any).processedPayments.delete(paymentId);
               console.error('Error updating profile:', error);
               return res.status(500).send(`Error updating profile: ${error.message}`);
             }
             
-            if (!updatedProfile || updatedProfile.length === 0) {
-                console.error('Profile update succeeded but no rows returned. Check if user ID exists or RLS policies.');
-            } else {
-                console.log(`User ${userId} upgraded to PRO successfully until ${expiryDate.toISOString()}`);
-            }
-          } else {
-            console.warn('No user_id found in payment metadata');
+            console.log(`Successfully upgraded user ${userId} to PRO until ${expiryDate.toISOString()}`);
           }
         }
       } catch (error) {

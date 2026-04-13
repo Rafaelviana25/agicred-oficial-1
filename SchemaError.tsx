@@ -1,131 +1,332 @@
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+import { Contract, Client } from '../types';
 
-import React, { useState } from 'react';
-import { supabase } from '../services/supabase';
-import { ShieldCheck, Zap } from 'lucide-react';
-import { AgicredLogo } from '../components/AgicredLogo';
-
-interface CompleteProfileProps {
-  session: any;
-  onSuccess: () => void;
-}
-
-const CompleteProfile: React.FC<CompleteProfileProps> = ({ session, onSuccess }) => {
-  const [form, setForm] = useState({
-    fullName: session.user.user_metadata?.full_name || '',
-    cpf: session.user.user_metadata?.cpf || '',
-    phone: session.user.user_metadata?.phone || '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: session.user.id,
-        full_name: form.fullName.toUpperCase(),
-        cpf: form.cpf,
-        email: session.user.email,
-        phone: form.phone,
-        password_plain: session.user.user_metadata?.password_plain || '',
-        is_pro: false
-      });
-
-    if (insertError) {
-      setError(insertError.message);
-      setLoading(false);
-    } else {
-      onSuccess();
-    }
-  };
-
-  return (
-    <div className="h-full flex items-center justify-center bg-[#F8FAFC] p-4 lg:p-6 uppercase relative overflow-hidden font-bold">
-      <div className="absolute top-[10%] right-[-5%] w-[30%] h-[30%] bg-emerald-500 opacity-[0.05] blur-[120px] rounded-full"></div>
+export const setupLocalNotifications = async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      let permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display === 'prompt' || permStatus.display === 'denied') {
+        permStatus = await LocalNotifications.requestPermissions();
+      }
       
-      <div className="max-w-md w-full glass-panel rounded-3xl border border-slate-200 p-8 lg:p-10 space-y-8 animate-in fade-in duration-700 shadow-2xl relative z-10">
-        <div className="text-center space-y-4">
-          <AgicredLogo className="mx-auto scale-90" />
-          <div className="space-y-1">
-            <p className="text-emerald-600 font-bold text-[9px] tracking-[0.4em] opacity-80 flex items-center justify-center gap-2">
-              <Zap size={12} /> FINALIZAR CONFIGURAÇÃO
-            </p>
-          </div>
-        </div>
+      if (permStatus.display !== 'granted') {
+        console.warn("Permissão de notificação local não concedida.");
+      }
 
-        {error && (
-          <div className="bg-rose-50 text-rose-600 p-4 rounded-xl text-[9px] font-black border border-rose-200 uppercase tracking-widest text-center leading-tight">
-            {error.toUpperCase()}
-          </div>
-        )}
-
-        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-           <p className="text-emerald-600 font-black text-[9px] text-center tracking-widest leading-relaxed">
-             PRECISAMOS VINCULAR SEUS DADOS PROFISSIONAIS AO SISTEMA BANCÁRIO PARA LIBERAR SEU ACESSO.
-           </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 mb-1 block">CONFIRME SEU NOME</label>
-              <input 
-                required 
-                className="w-full px-5 py-3.5 glass-input rounded-2xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:bg-white transition-all" 
-                placeholder="NOME COMPLETO"
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value.toUpperCase() })} 
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 mb-1 block">CPF / ID</label>
-                <input 
-                  required 
-                  className="w-full px-5 py-3.5 glass-input rounded-2xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:bg-white transition-all" 
-                  placeholder="000.000.000-00" 
-                  value={form.cpf}
-                  onChange={(e) => setForm({ ...form, cpf: e.target.value })} 
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-3 mb-1 block">CONTATO</label>
-                <input 
-                  required 
-                  className="w-full px-5 py-3.5 glass-input rounded-2xl outline-none text-slate-900 font-bold text-xs uppercase placeholder:text-slate-400 shadow-inner focus:bg-white transition-all" 
-                  placeholder="(00) 00000-0000" 
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })} 
-                />
-              </div>
-            </div>
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="w-full primary-gradient text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-[0.98] transition-all mt-4 hover:shadow-violet-500/25"
-          >
-            {loading ? 'SINCRONIZANDO...' : 'ATIVAR CONTA AGICRED'}
-          </button>
-        </form>
-
-        <div className="text-center pt-4 border-t border-slate-200">
-          <button 
-            onClick={() => supabase.auth.signOut()} 
-            className="text-slate-400 text-[9px] font-black uppercase tracking-widest hover:text-slate-900 transition-colors flex items-center justify-center gap-2 mx-auto"
-          >
-            SAIR DA CONTA
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+      // On Android, we might need to check for exact alarm permission
+      // but Capacitor doesn't expose this directly. 
+      // Requesting permissions again with specific types can help.
+      await LocalNotifications.requestPermissions();
+    } catch (e) {
+      console.error("Erro ao configurar permissões de notificação:", e);
+    }
+  }
 };
 
-export default CompleteProfile;
+export const scheduleContractNotifications = async (contracts: Contract[], clients: Client[], proExpiresAt?: string | null, trialExpiresAt?: string | null) => {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const isEnabled = localStorage.getItem('local_notifications_enabled') === 'true';
+  
+  const pending = await LocalNotifications.getPending();
+  if (pending.notifications.length > 0) {
+    await LocalNotifications.cancel(pending);
+  }
+  
+  const now = new Date();
+  const isPro = proExpiresAt && new Date(proExpiresAt) > now;
+  const isTrial = trialExpiresAt && new Date(trialExpiresAt) > now;
+  
+  if (!isEnabled || (!isPro && !isTrial)) return;
+
+  const notificationsToSchedule: any[] = [];
+  let idCounter = 1;
+
+  const timeStr = localStorage.getItem('notif_time') || '09:00';
+  let [hours, minutes] = timeStr.split(':').map(Number);
+  
+  if (isNaN(hours) || isNaN(minutes)) {
+    hours = 9;
+    minutes = 0;
+  }
+
+  // Use a stable base time for all calculations in this pass
+  const baseDate = new Date(now);
+  console.log(`Agendando notificações para as ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} (Base: ${baseDate.toISOString()})`);
+
+  const hasSound = localStorage.getItem('notif_sound') !== 'false';
+  const hasVib = localStorage.getItem('notif_vib') !== 'false';
+
+  let channelId = 'agicred_alerts';
+  if (Capacitor.getPlatform() === 'android') {
+    channelId = `agicred_alerts_${hasSound ? 's' : 'ns'}_${hasVib ? 'v' : 'nv'}`;
+    try {
+      await LocalNotifications.createChannel({
+        id: channelId,
+        name: 'Alertas Agicred',
+        description: 'Notificações de vencimento',
+        importance: hasSound ? 5 : 2, // 5 = High (sound), 2 = Low (no sound)
+        vibration: hasVib,
+        visibility: 1,
+        sound: hasSound ? 'default' : undefined
+      });
+    } catch (e) {
+      console.error("Erro ao criar canal de notificação:", e);
+    }
+  }
+
+  // TRIAL Expiry Notification
+  if (trialExpiresAt && !proExpiresAt) { // Only if not PRO
+    const expiryDate = new Date(trialExpiresAt);
+    
+    // 1 day before at 09:00, 15:00, 21:00
+    const oneDayTimes = [9, 15, 21];
+    oneDayTimes.forEach((h, idx) => {
+      const oneDayBefore = new Date(expiryDate);
+      oneDayBefore.setDate(expiryDate.getDate() - 1);
+      oneDayBefore.setHours(h, 0, 0, 0);
+      if (oneDayBefore.getTime() > baseDate.getTime()) {
+        notificationsToSchedule.push({
+          title: 'Teste Grátis Expirando',
+          body: 'ATENÇÃO! Falta 01 dia para finalizar seu teste gratis, ative o plano PRO',
+          id: 6000 + idx,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: oneDayBefore,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+        });
+      }
+    });
+  }
+
+  // PRO Expiry Notification
+  if (proExpiresAt) {
+    const expiryDate = new Date(proExpiresAt);
+    
+    // 3 days before at 09:00
+    const threeDaysBefore = new Date(expiryDate);
+    threeDaysBefore.setDate(expiryDate.getDate() - 3);
+    threeDaysBefore.setHours(9, 0, 0, 0);
+    if (threeDaysBefore.getTime() > baseDate.getTime()) {
+      notificationsToSchedule.push({
+        title: 'Renovação de Plano',
+        body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 3 DIAS',
+        id: 5003,
+        channelId: channelId,
+        smallIcon: 'ic_stat_notification',
+        schedule: { 
+          at: threeDaysBefore,
+          allowWhileIdle: true
+        },
+        ...(hasSound ? { sound: 'default' } : {}),
+      });
+    }
+
+    // 2 days before at 09:00
+    const twoDaysBefore = new Date(expiryDate);
+    twoDaysBefore.setDate(expiryDate.getDate() - 2);
+    twoDaysBefore.setHours(9, 0, 0, 0);
+    if (twoDaysBefore.getTime() > baseDate.getTime()) {
+      notificationsToSchedule.push({
+        title: 'Renovação de Plano',
+        body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 2 DIAS',
+        id: 5002,
+        channelId: channelId,
+        smallIcon: 'ic_stat_notification',
+        schedule: { 
+          at: twoDaysBefore,
+          allowWhileIdle: true
+        },
+        ...(hasSound ? { sound: 'default' } : {}),
+      });
+    }
+
+    // 1 day before at 08:00, 15:00, 21:00
+    const oneDayTimes = [8, 15, 21];
+    oneDayTimes.forEach((h, idx) => {
+      const oneDayBefore = new Date(expiryDate);
+      oneDayBefore.setDate(expiryDate.getDate() - 1);
+      oneDayBefore.setHours(h, 0, 0, 0);
+      if (oneDayBefore.getTime() > baseDate.getTime()) {
+        notificationsToSchedule.push({
+          title: 'Renovação de Plano',
+          body: 'ATENÇÃO! O PLANO PRO ENCERRA EM 1 DIA',
+          id: 5010 + idx,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: oneDayBefore,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+        });
+      }
+    });
+  }
+
+  contracts.forEach(c => {
+    if (c.status === 'paid') return;
+    
+    const monthlyValue = Number(c.monthly_interest) || 0;
+    if (monthlyValue <= 0) return;
+
+    const totalPaid = Number(c.paid_amount || 0);
+    // Use integer math (cents) to avoid floating point errors
+    const installmentsFullyPaid = Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyValue * 100));
+    
+    if (installmentsFullyPaid >= c.months) return;
+
+    const firstDueDate = new Date(c.end_date + 'T12:00:00');
+    if (c.months > 1) {
+      firstDueDate.setMonth(firstDueDate.getMonth() - (c.months - 1));
+    }
+
+    // Next unpaid installment due date
+    const dueDate = new Date(firstDueDate);
+    dueDate.setMonth(dueDate.getMonth() + installmentsFullyPaid);
+    
+    const client = clients.find(cl => cl.id === c.client_id);
+    const clientName = client ? client.full_name : 'Cliente';
+
+    // Calculate the notification time for today
+    const todayNotifTime = new Date(baseDate);
+    todayNotifTime.setHours(hours, minutes, 0, 0);
+
+    // If the contract is due today or already overdue
+    const isDueToday = dueDate.toDateString() === baseDate.toDateString();
+    const isOverdue = dueDate.getTime() < baseDate.getTime() && !isDueToday;
+
+    if (isDueToday || isOverdue) {
+      if (isOverdue) {
+        // For overdue contracts, schedule a REPEATING notification so it reminds every day
+        // until the user opens the app and it gets rescheduled (or contract is paid)
+        let exactTime = new Date(todayNotifTime.getTime());
+        if (exactTime.getTime() <= baseDate.getTime()) {
+          exactTime.setDate(exactTime.getDate() + 1);
+        }
+        notificationsToSchedule.push({
+          title: 'Contrato Vencido!',
+          body: `O contrato de ${clientName} está vencido.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: exactTime,
+            every: 'day',
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+          extra: { isOverdue: true }
+        });
+      } else if (todayNotifTime.getTime() > baseDate.getTime()) {
+        // Due today and time is in the future
+        const exactTime = new Date(todayNotifTime.getTime());
+        
+        notificationsToSchedule.push({
+          title: 'Vencimento Hoje',
+          body: `O contrato de ${clientName} vence hoje.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: exactTime,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+          extra: { isOverdue: false }
+        });
+      } else {
+        // Due today but time already passed, schedule for tomorrow as "Overdue"
+        let exactTime = new Date(todayNotifTime.getTime());
+        exactTime.setDate(exactTime.getDate() + 1);
+        notificationsToSchedule.push({
+          title: 'Contrato Vencido!',
+          body: `O contrato de ${clientName} está vencido.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: exactTime,
+            every: 'day',
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+          extra: { isOverdue: true }
+        });
+      }
+    } else {
+      // Future due date (not today, not overdue)
+      const futureNotifTime = new Date(dueDate);
+      futureNotifTime.setHours(hours, minutes, 0, 0);
+
+      // Only schedule if it's within a reasonable window (e.g., next 30 days) to avoid hitting limits
+      const thirtyDaysFromNow = new Date(baseDate);
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+      if (futureNotifTime.getTime() > baseDate.getTime() && futureNotifTime.getTime() < thirtyDaysFromNow.getTime()) {
+        const exactTime = new Date(futureNotifTime.getTime());
+
+        notificationsToSchedule.push({
+          title: 'Vencimento em Breve',
+          body: `O contrato de ${clientName} vence em breve.`,
+          id: 1000 + idCounter++,
+          channelId: channelId,
+          smallIcon: 'ic_stat_notification',
+          schedule: { 
+            at: exactTime,
+            allowWhileIdle: true
+          },
+          ...(hasSound ? { sound: 'default' } : {}),
+        });
+      }
+    }
+  });
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const permStatus = await LocalNotifications.checkPermissions();
+      if (permStatus.display !== 'granted') {
+        console.warn("Sem permissão para agendar notificações.");
+        return;
+      }
+
+      if (notificationsToSchedule.length > 0) {
+        console.log(`Agendando ${notificationsToSchedule.length} notificações no dispositivo:`, notificationsToSchedule);
+        await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+      } else {
+        console.log("Nenhuma notificação para agendar (sem contratos vencendo hoje ou atrasados).");
+      }
+    } catch (e) {
+      console.error("Erro ao agendar notificações locais:", e);
+    }
+  }
+};
+
+export const sendTestNotification = async () => {
+  const now = new Date();
+  const testTime = new Date(now.getTime() + 5000); // 5 seconds from now
+  
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: 'Teste de Notificação',
+            body: 'Se você está vendo isso, as notificações estão funcionando!',
+            id: 999,
+            smallIcon: 'ic_stat_notification',
+            schedule: { at: testTime, allowWhileIdle: true }
+          }
+        ]
+      });
+      alert("Notificação de teste agendada para daqui a 5 segundos.");
+    } catch (e) {
+      console.error("Erro no teste de notificação:", e);
+      alert("Erro ao enviar notificação de teste.");
+    }
+  }
+};

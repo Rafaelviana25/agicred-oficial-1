@@ -1,121 +1,190 @@
-# Guia Completo de Integração e Personalização (Passo a Passo)
 
-Este documento foi criado para guiá-lo em todo o processo de configuração do sistema de pagamentos PIX (Mercado Pago) e gerenciamento de usuários (Supabase), além de dicas de layout.
+import React, { useState, useEffect } from 'react';
+import { supabase } from './services/supabase';
+import { setupLocalNotifications } from './services/localNotifications';
+import Login from './views/Login';
+import Register from './views/Register';
+import Dashboard from './views/Dashboard';
+import SchemaError from './views/SchemaError';
+import { UserProfile } from './types';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 
----
+const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'login' | 'register'>('login');
+  const [hasSchemaError, setHasSchemaError] = useState(false);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
 
-## PARTE 1: Configurando o Mercado Pago (Pagamentos)
+  useEffect(() => {
+    // Configurar Barra de Status no Android/iOS
+    if (Capacitor.isNativePlatform()) {
+      try {
+        StatusBar.setStyle({ style: Style.Dark }); // Texto branco
+        StatusBar.setOverlaysWebView({ overlay: false });
+        StatusBar.setBackgroundColor({ color: '#7C3AED' });
+      } catch (err) {
+        console.error('Erro ao configurar StatusBar:', err);
+      }
+    }
 
-O Mercado Pago é quem processará o pagamento via PIX.
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session error:", error);
+        supabase.auth.signOut().catch(console.error);
+        setSession(null);
+      } else {
+        setSession(session);
+        if (session) fetchProfile(session.user.id, session);
+      }
+      setLoading(false);
+    }).catch(err => {
+      console.error("Session catch error:", err);
+      supabase.auth.signOut().catch(console.error);
+      setSession(null);
+      setLoading(false);
+    });
 
-1.  **Acesse o Painel de Desenvolvedores:**
-    *   Vá para: [https://www.mercadopago.com.br/developers/panel](https://www.mercadopago.com.br/developers/panel)
-    *   Faça login com sua conta do Mercado Livre/Pago.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveringPassword(true);
+      }
+      if (event === 'SIGNED_OUT') {
+        setIsRecoveringPassword(false);
+      }
+      setSession(session);
+      if (session && event !== 'PASSWORD_RECOVERY') fetchProfile(session.user.id, session);
+      else if (!session) {
+        setProfile(null);
+      }
+    });
 
-2.  **Crie uma Aplicação:**
-    *   Clique no botão azul **"Criar aplicação"**.
-    *   Dê um nome para o app (ex: "Agicred App").
-    *   Em "Qual tipo de solução você quer integrar?", escolha **"Pagamento on-line"**.
-    *   Aceite os termos e clique em "Criar aplicação".
+    return () => subscription.unsubscribe();
+  }, []);
 
-3.  **Obtenha as Credenciais (Chaves):**
-    *   Na tela da aplicação criada, procure no menu lateral por **"Credenciais de produção"**.
-    *   Você verá duas chaves: `Public Key` e `Access Token`.
-    *   Copie o **Access Token**. (Ele começa com `APP_USR-...`).
-    *   **Guarde este código**, você vai usá-lo na PARTE 3.
+  const fetchProfile = async (userId: string, currentSession: any) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-4.  **Configure as Notificações (Webhook):**
-    *   Isso é crucial para o sistema saber que o pagamento foi aprovado.
-    *   No menu lateral, clique em **"Notificações Webhooks"**.
-    *   Em **"Modo Produção"**, preencha o campo **URL de produção** com o seguinte endereço:
-        `https://<SUA-URL-DO-APP>.run.app/api/webhook/mercadopago`
-        *(Substitua `<SUA-URL-DO-APP>` pelo endereço real onde seu site está hospedado. Se estiver testando localmente, precisará de um túnel como ngrok, mas na nuvem use a URL final).*
-    *   Em **"Eventos"**, marque a caixa **"Pagamentos"**.
-    *   Clique em "Salvar".
+    const now = new Date();
+    const trialExpires = new Date();
+    trialExpires.setDate(now.getDate() + 7);
 
----
+    const fallbackProfile = {
+      id: userId,
+      email: currentSession?.user?.email || '',
+      full_name: currentSession?.user?.user_metadata?.full_name || 'Usuário',
+      cpf: currentSession?.user?.user_metadata?.cpf || '',
+      phone: currentSession?.user?.user_metadata?.phone || '',
+      is_pro: false,
+      is_trial: true,
+      trial_started_at: now.toISOString(),
+      trial_expires_at: trialExpires.toISOString(),
+      created_at: now.toISOString()
+    };
 
-## PARTE 2: Configurando o Supabase (Banco de Dados)
+    if (error) {
+      console.error('Error fetching profile:', error);
+      if (error.code === 'PGRST205') {
+        setHasSchemaError(true);
+      } else {
+        setProfile(fallbackProfile);
+      }
+      return;
+    }
 
-O Supabase é onde os dados dos usuários são guardados.
+    if (data) {
+      // Verifica se o plano PRO ou TRIAL expirou
+      let needsUpdate = false;
+      const updates: any = {};
 
-1.  **Acesse o Painel do Supabase:**
-    *   Vá para o seu projeto no Supabase.
+      if (data.is_pro && data.pro_expires_at && new Date(data.pro_expires_at) < now) {
+        updates.is_pro = false;
+        needsUpdate = true;
+      }
 
-2.  **Obtenha as Chaves de API:**
-    *   No menu lateral esquerdo, clique no ícone de engrenagem (**Settings**).
-    *   Clique em **"API"**.
-    *   Copie a **Project URL** (URL do projeto).
-    *   Copie a chave **service_role** (secret).
-        *   *Atenção: Existem duas chaves, `anon` e `service_role`. Para o servidor funcionar, precisamos da `service_role`.*
+      if (data.is_trial && data.trial_expires_at && new Date(data.trial_expires_at) < now) {
+        updates.is_trial = false;
+        needsUpdate = true;
+      }
 
----
+      if (needsUpdate) {
+        const { data: updatedData, error: updateError } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', userId)
+          .select()
+          .single();
+          
+        if (!updateError && updatedData) {
+          setProfile(updatedData);
+        } else {
+          setProfile({ ...data, ...updates });
+        }
+      } else {
+        setProfile(data);
+      }
+      setHasSchemaError(false);
+      setupLocalNotifications();
+    } else {
+      // Usuário logado mas sem registro na tabela profiles
+      // Tentar criar perfil básico automaticamente
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert(fallbackProfile)
+        .select()
+        .single();
 
-## PARTE 3: Conectando Tudo (Variáveis de Ambiente)
+      if (createError) {
+        console.error('Error auto-creating profile:', createError);
+        // Se falhar (ex: race condition com Register.tsx), aguarda um pouco e tenta buscar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: retryData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+          
+        if (retryData) {
+          setProfile(retryData);
+        } else {
+          // Fallback final para garantir que o app não quebre
+          setProfile(fallbackProfile);
+        }
+      } else {
+        setProfile(newProfile);
+      }
+    }
+  };
 
-Agora você precisa "dizer" ao seu aplicativo quais são essas chaves.
+  const handleProfileComplete = () => {
+    if (session) fetchProfile(session.user.id, session);
+  };
 
-1.  **Onde configurar:**
-    *   Se estiver rodando localmente, abra o arquivo `.env` na raiz do projeto.
-    *   Se estiver hospedando (ex: Vercel, Google Cloud Run), vá nas configurações de "Environment Variables".
+  if (hasSchemaError) {
+    return <SchemaError />;
+  }
 
-2.  **Adicione as seguintes variáveis:**
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
-```env
-# URL do seu projeto Supabase (Copiado na Parte 2)
-VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+  if (!session || isRecoveringPassword) {
+    return view === 'login' 
+      ? <Login onSwitch={() => setView('register')} onRecoveryMode={(mode) => setIsRecoveringPassword(mode)} /> 
+      : <Register onSwitch={() => setView('login')} />;
+  }
 
-# Chave pública (anon) do Supabase (Copiada na Parte 2)
-VITE_SUPABASE_ANON_KEY=sua-chave-anon-publica
+  return <Dashboard userProfile={profile} onUpgradeSuccess={handleProfileComplete} />;
+};
 
-# Chave secreta (service_role) do Supabase (Copiada na Parte 2)
-SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role-secreta
-
-# Token de Acesso do Mercado Pago (Copiado na Parte 1)
-MERCADO_PAGO_ACCESS_TOKEN=seu-access-token-mercado-pago
-
-# URL pública da sua aplicação (sem a barra no final)
-APP_URL=https://sua-aplicacao.run.app
-```
-
----
-
-## PARTE 4: Dicas de Layout e Personalização
-
-O layout do aplicativo foi construído pensando em simplicidade e modernidade (Glassmorphism). Aqui estão algumas dicas para você, como leigo, entender e pedir alterações se quiser:
-
-### 1. Cores e Identidade Visual
-O app usa o sistema **Tailwind CSS**. As cores principais são:
-*   **Fundo:** `slate-900` (Cinza escuro/azulado) para dar um ar profissional.
-*   **Painéis:** `glass-panel` (Branco translúcido) para criar camadas e profundidade.
-*   **Ações Principais:** `violet-600` (Roxo) e `emerald-500` (Verde) para botões de sucesso/dinheiro.
-
-**Dica:** Se quiser mudar a cor dos botões de "Roxo" para "Azul", basta pedir para trocar `violet-600` por `blue-600` no código.
-
-### 2. Ícones
-Usamos a biblioteca **Lucide React**. Ela tem ícones para tudo (usuário, dinheiro, calendário).
-**Dica:** Se quiser trocar o ícone de "Dinheiro" por um "Saco de Dinheiro", peça para trocar o ícone `Banknote` por `Coins` ou `DollarSign`.
-
-### 3. Textos e Mensagens
-Todos os textos estão diretamente no código (`Dashboard.tsx`, `UpgradeModal.tsx`).
-**Dica:** Se quiser mudar "UPGRADE PARA PRO" para "SEJA PREMIUM", basta pedir para alterar o texto no arquivo `UpgradeModal.tsx`.
-
-### 4. O Modal de Pagamento (`UpgradeModal.tsx`)
-Este modal foi desenhado para passar confiança:
-*   **Passo 1 (Formulário):** Pede apenas o necessário (Nome, CPF, Email) para gerar o PIX.
-*   **Passo 2 (QR Code):** Mostra o código grande e claro.
-*   **Feedback:** Tem uma animação de "Aguardando confirmação..." que fica pulsando para o usuário saber que o sistema está trabalhando.
-
----
-
-## Resumo do Fluxo de Sucesso
-
-1.  O usuário clica em **"ATIVAR PRO"**.
-2.  Preenche os dados e clica em **"GERAR QR CODE PIX"**.
-3.  O app chama o Mercado Pago e mostra o QR Code.
-4.  O usuário paga no app do banco dele.
-5.  O Mercado Pago avisa seu servidor (via Webhook).
-6.  Seu servidor atualiza o banco de dados (Supabase).
-7.  A tela do usuário atualiza automaticamente para **"PAGAMENTO CONFIRMADO"**.
-
-Se precisar de ajuda em qualquer etapa específica, basta perguntar!
+export default App;
