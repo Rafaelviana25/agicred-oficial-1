@@ -1,6 +1,20 @@
-VITE_SUPABASE_URL=https://molhsshtzrvkywoqhxho.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjU2MzgsImV4cCI6MjA4MzgwMTYzOH0.UcyQP7pUKtEO-3G43TEscPtrpcVsRpZJvRBmbSVUH6s
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyNTYzOCwiZXhwIjoyMDgzODAxNjM4fQ.3u57BBPtEuDKTJNDN1giPLgnJ4_KU9h-UqGgVFAB0L4
-MERCADO_PAGO_ACCESS_TOKEN=APP_USR-2064886398402150-022716-fe6f4981f312fbf4fd170ca11d630f4a-14757248
-APP_URL=https://agicred-9wto.onrender.com
-VITE_API_URL=https://agicred-9wto.onrender.com
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.agicred.app',
+  appName: 'Agicred',
+  webDir: 'dist',
+  plugins: {
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#7C3AED',
+      overlaysWebView: false,
+    },
+    LocalNotifications: {
+      smallIcon: "ic_stat_notification",
+      iconColor: "#7c3aed",
+    }
+  }
+};
+
+export default config;

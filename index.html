@@ -1,20 +1,128 @@
-import { CapacitorConfig } from '@capacitor/cli';
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <link rel="icon" type="image/png" href="/icon-512x512.png">
+    <title>AGICRED | Gestão de Empréstimos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --fintech-bg: #F8FAFC;
+            --fintech-card: #FFFFFF;
+            --fintech-primary: #7C3AED;
+            --fintech-secondary: #3B82F6;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--fintech-primary);
+            color: #0F172A;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: contain;
+            height: 100vh;
+            height: -webkit-fill-available;
+            overflow: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
+            display: flex;
+            flex-direction: column;
+        }
+        #root {
+            background-color: var(--fintech-bg);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.05), transparent 25%), 
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+            background-attachment: fixed;
+        }
+        html {
+            height: -webkit-fill-available;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            color: #0F172A;
+        }
+        .glass-input:focus {
+            border-color: rgba(124, 58, 237, 0.5);
+            background: #FFFFFF;
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #4F46E5 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .modal-safe {
+            top: env(safe-area-inset-top, 0px);
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+        .toast-safe {
+            top: calc(env(safe-area-inset-top, 0px) + 1rem);
+        }
+        .pb-safe {
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        }
+        .pt-safe {
+            padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+        }
+        @media (max-width: 1024px) {
+            .pt-safe-native {
+                padding-top: calc(env(safe-area-inset-top, 0px) + 15px);
+            }
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Hide spin buttons for number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
 
-const config: CapacitorConfig = {
-  appId: 'com.agicred.app',
-  appName: 'Agicred',
-  webDir: 'dist',
-  plugins: {
-    StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#7C3AED',
-      overlaysWebView: false,
-    },
-    LocalNotifications: {
-      smallIcon: "ic_stat_notification",
-      iconColor: "#7c3aed",
-    }
-  }
-};
-
-export default config;
+        .blue-gradient {
+            background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .animate-slow-fade {
+            animation: slow-fade 3s ease-in-out infinite;
+        }
+        @keyframes slow-fade {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+    <div id="root"></div>
+<script type="module" src="index.tsx"></script>
+</body>
+</html>
