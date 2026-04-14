@@ -9,6 +9,15 @@ dotenv.config();
 const app = express();
 
 app.use(cors());
+
+// Workaround for Vercel's pre-parsed body
+app.use((req: any, res, next) => {
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    req._body = true;
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Initialize Supabase Admin Client
@@ -387,6 +396,9 @@ app.post(['/api/create-payment', '/api/create-payment/'], async (req, res) => {
   }
   
   try {
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is missing' });
+    }
     const { userId, email, name, taxId, amount } = req.body;
 
     if (!userId || !email) {

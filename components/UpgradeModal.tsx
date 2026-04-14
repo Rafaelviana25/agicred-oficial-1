@@ -61,9 +61,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   }, []);
 
   useEffect(() => {
-    // Wake up the backend if it's on a free tier like Render
-    const apiUrl = (import.meta as any).env.VITE_API_URL || '';
-    fetch(`${apiUrl}/api/health`).catch(() => {});
+    // Wake up the backend
+    fetch(`/api/health`).catch(() => {});
   }, []);
 
   const handleSelectPlan = (plan: any) => {
@@ -93,15 +92,13 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
     setLoading(true);
     setFormErrorMsg(null);
     try {
-      // Use VITE_API_URL if available, otherwise default to same origin
-      const apiUrl = import.meta.env.VITE_API_URL || ''; 
-      console.log('Gerando PIX via:', `${apiUrl || 'servidor local'}/api/create-payment`);
+      console.log('Gerando PIX via: /api/create-payment');
       
       // Use AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 40000); // Increased to 40s
 
-      const response = await fetch(`${apiUrl}/api/create-payment`, {
+      const response = await fetch(`/api/create-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -117,7 +114,15 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
       });
 
       clearTimeout(timeoutId);
-      const data = await response.json();
+      
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Non-JSON response from server:', text);
+        throw new Error(`Erro no servidor: ${response.status} ${response.statusText}`);
+      }
 
       if (response.ok && data.id) {
         const paymentWithMeta = { ...data, userId: user.id, created_at: new Date().toISOString() };
@@ -146,9 +151,16 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
   const checkStatus = async () => {
     if (!paymentData) return false;
     try {
-      const apiUrl = (import.meta as any).env.VITE_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/payment-status/${paymentData.id}`);
-      const data = await response.json();
+      const response = await fetch(`/api/payment-status/${paymentData.id}`);
+      
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Non-JSON response in checkStatus:', text);
+        return false;
+      }
       
       if (data.is_approved) {
         setIsPaid(true);
