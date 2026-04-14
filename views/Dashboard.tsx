@@ -3530,7 +3530,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 </span>
                 <span 
                   className="text-[9px] font-black tracking-[0.1em] uppercase"
-                  style={{ color: '#000000', marginTop: '13px', marginBottom: '-1px' }}
+                  style={{ color: '#000000', marginTop: '13px', marginBottom: '2px' }}
                 >
                   VIGÊNCIA DO PLANO
                 </span>
