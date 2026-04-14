@@ -422,14 +422,9 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
     const now = new Date();
     const expires = new Date(expiresAt);
     const diff = expires.getTime() - now.getTime();
-    if (diff <= 0) return "EXPIRADO";
+    if (diff <= 0) return "0 DIAS";
 
-    const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30));
-    const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
-
-    if (months > 0) {
-      return `${months} MÊS${months > 1 ? 'ES' : ''} E ${days} DIA${days !== 1 ? 'S' : ''}`;
-    }
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
     return `${days} DIA${days !== 1 ? 'S' : ''}`;
   };
 
@@ -505,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
                 <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : (userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                <p className="font-black text-black">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
+                <p className="font-black text-black mt-1">ATENÇÃO! O PLANO PRO ENCERRA EM {getRemainingTime(userProfile.pro_expires_at)}</p>
               </div>
             )}
             {isTrial && (
@@ -3537,7 +3532,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                   <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
                     <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : (user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
                     <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                    <p className="font-black text-violet-800">RESTAM: {remainingTime || 'EXPIRADO'}</p>
+                    <p className="font-black text-violet-800 mt-1">ATENÇÃO! O PLANO PRO ENCERRA EM {remainingTime || 'EXPIRADO'}</p>
                     <div className="flex justify-start mt-2">
                       <button 
                         type="button" 
@@ -3811,7 +3806,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
           <div className="flex items-center gap-1.5">
             <Globe className="w-3 h-3" />
             <span className="text-[9px] font-black uppercase tracking-widest">
-              ACESSO WEB: <a href="https://agicred-9wto.onrender.com" target="_blank" rel="noopener noreferrer" className="lowercase font-bold text-violet-500 hover:text-violet-600 transition-colors">https://agicred-9wto.onrender.com</a>
+              ACESSO WEB: <a href="https://agicred.vercel.app" target="_blank" rel="noopener noreferrer" className="lowercase font-bold text-violet-500 hover:text-violet-600 transition-colors">https://agicred.vercel.app</a>
             </span>
           </div>
         </div>
