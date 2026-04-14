@@ -500,7 +500,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
               <div className="text-[8px] xl:text-[10px] text-center w-full mt-1 border-t border-violet-200 pt-1">
                 <p>INÍCIO: {userProfile.pro_started_at ? new Date(userProfile.pro_started_at).toLocaleDateString('pt-BR') : (userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
                 <p>TÉRMINO: {new Date(userProfile.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                <p className="font-black text-black mt-1">ATENÇÃO! O PLANO PRO ENCERRA EM {getRemainingTime(userProfile.pro_expires_at)}</p>
+                <p className="font-black text-black mt-1">RESTAM: {getRemainingTime(userProfile.pro_expires_at)}</p>
               </div>
             )}
             {isTrial && (
@@ -3528,20 +3528,40 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
                 <span className="text-violet-600 text-[10px] font-black tracking-[0.2em] uppercase flex items-center gap-1 mt-0.5">
                   VERSÃO PRO <Crown size={12} className="fill-violet-600" />
                 </span>
+                <span 
+                  className="text-[9px] font-black tracking-[0.1em] uppercase"
+                  style={{ color: '#000000', marginTop: '13px', marginBottom: '-1px' }}
+                >
+                  VIGÊNCIA DO PLANO
+                </span>
                 {user.pro_expires_at && (
-                  <div className="text-[10px] text-slate-500 font-black tracking-[0.1em] uppercase mt-1 border-t border-slate-100 pt-1">
-                    <p>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : (user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
-                    <p>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
-                    <p className="font-black text-violet-800 mt-1">ATENÇÃO! O PLANO PRO ENCERRA EM {remainingTime || 'EXPIRADO'}</p>
-                    <div className="flex justify-start mt-2">
-                      <button 
-                        type="button" 
-                        onClick={onUpgradeRequest}
-                        className="bg-violet-600 text-white pt-[6px] pb-[5px] pl-[14px] pr-[15px] rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200 h-[31px] w-[154px] mt-0 mb-[-1px]"
-                      >
-                        Renovação de Plano
-                      </button>
+                  <div 
+                    className="flex items-end justify-between border-t border-slate-100"
+                    style={{ marginTop: '-3px', paddingTop: '5px', paddingBottom: '2px' }}
+                  >
+                    <div className="text-[10px] font-black tracking-[0.1em] uppercase space-y-0.5">
+                      <p style={{ color: '#bebebe' }}>INÍCIO: {user.pro_started_at ? new Date(user.pro_started_at).toLocaleDateString('pt-BR') : (user.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'N/A')}</p>
+                      <p style={{ color: '#bebebe' }}>TÉRMINO: {new Date(user.pro_expires_at).toLocaleDateString('pt-BR')}</p>
+                      <p className="font-black text-violet-800" style={{ marginTop: '1px' }}>RESTAM: {remainingTime || 'EXPIRADO'}</p>
                     </div>
+                    <button 
+                      type="button" 
+                      onClick={onUpgradeRequest}
+                      className="bg-violet-600 text-white rounded-xl text-[9px] leading-[14px] font-bold uppercase tracking-widest hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200"
+                      style={{ 
+                        width: '138.062px', 
+                        height: '38px', 
+                        marginLeft: '37px', 
+                        marginTop: '-2px', 
+                        marginRight: '-90px', 
+                        marginBottom: '12px',
+                        paddingTop: '5px',
+                        paddingBottom: '4px',
+                        paddingRight: '0px'
+                      }}
+                    >
+                      Renovação de Plano
+                    </button>
                   </div>
                 )}
               </div>

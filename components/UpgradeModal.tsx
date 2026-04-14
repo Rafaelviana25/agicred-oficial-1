@@ -228,7 +228,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
 
   return (
     <div className="fixed inset-0 bg-white z-[120] uppercase overflow-y-auto pt-safe-native">
-      <div className="min-h-screen w-full p-4 md:p-8 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
+      <div className="min-h-screen w-full p-2 md:p-4 relative animate-in fade-in duration-300 bg-white flex flex-col items-center">
         {!isPaid && (
           <button 
             type="button"
@@ -236,7 +236,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
               if (step === 'plans') onClose();
               else setStep('plans');
             }} 
-            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 transition z-20 bg-slate-100 rounded-xl hover:bg-slate-200"
+            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 transition z-20 bg-slate-100 rounded-xl hover:bg-slate-200"
             aria-label="Fechar"
           >
             <X size={24} />
@@ -254,7 +254,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             <p className="text-slate-500 text-sm">AGUARDE... REDIRECIONANDO VOCÊ PARA O DASHBOARD ILIMITADO.</p>
           </div>
         ) : step === 'plans' ? (
-          <div className="w-full max-w-6xl flex flex-col items-center">
+          <div className="w-full max-w-6xl flex flex-col items-center mt-10 md:mt-12">
             <div className="text-center mb-8 md:mb-12">
               <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
               <p className="text-slate-500 font-bold mt-3 text-[10px] md:text-sm tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
@@ -333,7 +333,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             )}
           </div>
         ) : step === 'form' ? (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 mt-10 md:mt-12">
             <div className="flex items-center justify-center mb-6">
               <h2 className="text-xl font-black text-slate-900 tracking-tight" style={{ marginTop: '10px' }}>DADOS DE PAGAMENTO</h2>
             </div>
@@ -375,7 +375,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             </form>
           </div>
         ) : (
-          <div className="text-center space-y-5 max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="text-center space-y-5 max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-300 mt-10 md:mt-12">
             <div className="flex items-center justify-between mb-2">
               <button onClick={() => setStep('plans')} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200">
                 <ArrowLeft size={16} />
