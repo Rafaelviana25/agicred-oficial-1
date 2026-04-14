@@ -254,10 +254,10 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             <p className="text-slate-500 text-sm">AGUARDE... REDIRECIONANDO VOCÊ PARA O DASHBOARD ILIMITADO.</p>
           </div>
         ) : step === 'plans' ? (
-          <div className="w-full max-w-6xl flex flex-col items-center mt-10 md:mt-12">
-            <div className="text-center mb-8 md:mb-12">
-              <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
-              <p className="text-slate-500 font-bold mt-3 text-[10px] md:text-sm tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS AGORA MESMO.</p>
+          <div className="w-full max-w-6xl flex flex-col items-center mt-2 md:mt-4">
+            <div className="text-center mb-6 md:mb-8 px-16">
+              <h2 className="text-sm md:text-lg font-black text-slate-900 tracking-tight">ESCOLHA SEU PLANO PRO</h2>
+              <p className="text-slate-400 font-bold mt-1 text-[8px] md:text-[10px] tracking-widest uppercase">DESBLOQUEIE TODOS OS RECURSOS</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:gap-6 w-full">
@@ -333,9 +333,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             )}
           </div>
         ) : step === 'form' ? (
-          <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 mt-10 md:mt-12">
-            <div className="flex items-center justify-center mb-6">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight" style={{ marginTop: '10px' }}>DADOS DE PAGAMENTO</h2>
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 mt-2 md:mt-4">
+            <div className="flex items-center justify-center mb-4 px-16">
+              <h2 className="text-sm md:text-lg font-black text-slate-900 tracking-tight">DADOS DE PAGAMENTO</h2>
             </div>
 
             <form onSubmit={handleCreateQR} className="space-y-6 mx-auto" style={{ marginTop: '32px', width: '300.156px' }}>
@@ -375,17 +375,17 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ user, onClose, onSuccess })
             </form>
           </div>
         ) : (
-          <div className="text-center space-y-5 max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-300 mt-10 md:mt-12">
-            <div className="flex items-center justify-between mb-2">
+          <div className="text-center space-y-4 max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-300 mt-2 md:mt-4">
+            <div className="flex items-center justify-between mb-2 px-4">
               <button onClick={() => setStep('plans')} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-slate-100 rounded-xl hover:bg-slate-200">
                 <ArrowLeft size={16} />
               </button>
+              <h2 className="text-sm md:text-lg font-black text-slate-900 tracking-tight">ESCANEIE O PIX</h2>
               <div className="w-8"></div>
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-xl font-black text-slate-900" style={{ marginTop: '10px' }}>ESCANEIE O PIX</h2>
-              <p className="text-slate-500 font-medium text-[10px] tracking-widest uppercase">ESCANEIE O QR CODE ABAIXO COM O APP DO SEU BANCO.</p>
+              <p className="text-slate-400 font-medium text-[8px] md:text-[10px] tracking-widest uppercase">ESCANEIE O QR CODE ABAIXO COM O APP DO SEU BANCO.</p>
             </div>
 
             <div className="bg-white p-4 rounded-3xl inline-block shadow-inner border-2 border-slate-100 ring-1 ring-slate-200">
