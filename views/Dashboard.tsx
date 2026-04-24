@@ -2015,6 +2015,11 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   const [isEditing, setIsEditing] = useState(false);
   const [showPartialPay, setShowPartialPay] = useState(false);
   const [partialValue, setPartialValue] = useState('');
+  const [abateTarget, setAbateTarget] = useState<{ type: 'installment' | 'capital', index?: number } | null>(null);
+  const [abateValue, setAbateValue] = useState('');
+  const [editingPartialId, setEditingPartialId] = useState<string | null>(null);
+  const [editingPartialValue, setEditingPartialValue] = useState<string>('');
+  const [isDeletingPartial, setIsDeletingPartial] = useState<string | null>(null);
   const [editingPaymentDate, setEditingPaymentDate] = useState<{index: number, date: string} | null>(null);
   const [notes, setNotes] = useState('');
 
@@ -2241,15 +2246,31 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
 
   const monthlyInterestOnly = Number(contract.monthly_interest) || 0;
   const totalPaid = Number(contract.paid_amount || 0);
-  // Use integer math (cents) to avoid floating point errors
-  const installmentsPaidCount = monthlyInterestOnly > 0 
-    ? Math.floor(Math.round(totalPaid * 100) / Math.round(monthlyInterestOnly * 100)) 
-    : 0;
   
-  const totalRemainingDebt = Number(contract.total_amount) - totalPaid;
-  const remainingInstallmentsCount = Math.max(0, Number(contract.months) - installmentsPaidCount);
-  const remainingInterestTotal = remainingInstallmentsCount * monthlyInterestOnly;
-  const remainingCapitalTotal = Math.max(0, totalRemainingDebt - remainingInterestTotal);
+  const totalInterest = monthlyInterestOnly * Number(contract.months);
+  const interestPaid = Math.min(totalPaid, totalInterest);
+  const remainingInterestTotal = Math.max(0, totalInterest - interestPaid);
+  const remainingCapitalTotal = Math.max(0, Number(contract.capital) - Math.max(0, totalPaid - totalInterest));
+  const totalRemainingDebt = Math.max(0, (Number(contract.total_amount) || 0) - totalPaid);
+
+  const installmentsPaidCount = monthlyInterestOnly > 0 
+    ? Math.floor(Math.round(interestPaid * 100) / Math.round(monthlyInterestOnly * 100)) 
+    : 0;
+
+  const getInstallmentStatus = (index: number) => {
+    if (monthlyInterestOnly <= 0) return { paid: 0, remaining: 0, isFullyPaid: true };
+    
+    // Priority: First to Last
+    const usedByEarlier = index * monthlyInterestOnly;
+    const remainingForThisAndLater = Math.max(0, interestPaid - usedByEarlier);
+    const paidToThis = Math.min(monthlyInterestOnly, remainingForThisAndLater);
+    
+    return {
+      paid: paidToThis,
+      remaining: Math.max(0, monthlyInterestOnly - paidToThis),
+      isFullyPaid: paidToThis >= (monthlyInterestOnly - 0.01)
+    };
+  };
   
   const abatementValue = parseFloat(partialValue || '0') || 0;
   const projectedDebt = Math.max(0, totalRemainingDebt - abatementValue);
@@ -2298,8 +2319,12 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   };
 
   const toggleInstallmentPayment = async (index: number, currentlyPaid: boolean) => {
-    const isNextToPay = index === installmentsPaidCount;
-    const isLastPaid = index === installmentsPaidCount - 1;
+    // With FIFO priority:
+    // Next to pay (when paying) is the first index not fully paid
+    // Last paid (when unpaying) is the highest index currently paid
+    
+    const isNextToPay = !currentlyPaid && (index === installmentsPaidCount);
+    const isLastPaid = currentlyPaid && (index === installmentsPaidCount - 1);
 
     if (!currentlyPaid && !isNextToPay) return;
     if (currentlyPaid && !isLastPaid) return;
@@ -2400,34 +2425,202 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
   };
 
   const handlePartialPayment = async () => {
-    const value = parseFloat(partialValue);
+    const sanitizedValue = partialValue.replace(',', '.');
+    const value = parseFloat(sanitizedValue);
     if (isNaN(value) || value <= 0) return;
 
     setUpdating(true);
+    try {
+        const currentPaid = Number(contract.paid_amount || 0);
+        const newPaidAmount = Math.min(Number(contract.total_amount), currentPaid + value);
+        const isFullyPaid = newPaidAmount >= (Number(contract.total_amount) - 0.01);
+
+        const updateData: any = {
+            paid_amount: newPaidAmount,
+            status: isFullyPaid ? 'paid' : 'active'
+        };
+
+        const { error } = await supabase.from('contracts').update(updateData).eq('id', contract.id);
+
+        if (!error) {
+            // Now attempt to update the history separately (non-blocking)
+            const currentHistory = contract.payment_history || {};
+            const partials = Array.isArray(currentHistory.partials) ? currentHistory.partials : [];
+            const newPartialEntry = {
+                id: Math.random().toString(36).substr(2, 9),
+                amount: value,
+                date: new Date().toISOString()
+            };
+
+            const historyUpdate: any = {
+                payment_history: {
+                    ...currentHistory,
+                    partials: [...partials, newPartialEntry]
+                }
+            };
+            if (isFullyPaid) {
+                historyUpdate.payment_history.settled = new Date().toISOString().split('T')[0];
+            }
+
+            const { error: histError } = await supabase.from('contracts').update(historyUpdate).eq('id', contract.id);
+            if (histError) {
+                console.warn("Could not save to payment_history (column might be missing), but amount was saved.", histError);
+            }
+
+            setShowPartialPay(false);
+            setPartialValue('');
+            onSuccess();
+        } else {
+            console.error("Erro ao realizar abatimento:", error);
+            alert("Erro ao realizar abatimento: " + error.message);
+        }
+    } catch (err: any) {
+        console.error("Exceção no abatimento:", err);
+        alert("Erro inesperado: " + err.message);
+    } finally {
+        setUpdating(false);
+    }
+  };
+
+  const handleTargetedAbatement = async () => {
+    const sanitizedValue = abateValue.replace(',', '.');
+    const value = parseFloat(sanitizedValue);
+    if (isNaN(value) || value <= 0) return;
+
+    setUpdating(true);
+    try {
+        const currentPaid = Number(contract.paid_amount || 0);
+        const newPaidAmount = Math.min(Number(contract.total_amount), currentPaid + value);
+        const isFullyPaid = newPaidAmount >= (Number(contract.total_amount) - 0.01);
+
+        const currentHistory = contract.payment_history || {};
+        const partials = Array.isArray(currentHistory.partials) ? currentHistory.partials : [];
+        const label = abateTarget?.type === 'capital' ? 'CAPITAL' : `PARCELA ${Number(abateTarget?.index ?? 0) + 1}`;
+        
+        const newPartialEntry = {
+            id: Math.random().toString(36).substr(2, 9),
+            amount: value,
+            date: new Date().toISOString(),
+            target: label
+        };
+
+        const updateData: any = {
+            paid_amount: newPaidAmount,
+            status: isFullyPaid ? 'paid' : 'active'
+        };
+
+        const { error } = await supabase.from('contracts').update(updateData).eq('id', contract.id);
+
+        if (!error) {
+            const historyUpdate: any = {
+                payment_history: {
+                    ...currentHistory,
+                    partials: [...partials, newPartialEntry]
+                }
+            };
+            if (isFullyPaid) {
+                historyUpdate.payment_history.settled = new Date().toISOString().split('T')[0];
+            }
+            await supabase.from('contracts').update(historyUpdate).eq('id', contract.id);
+
+            setAbateTarget(null);
+            setAbateValue('');
+            onSuccess();
+        } else {
+            alert("Erro ao realizar abatimento: " + error.message);
+        }
+    } catch (err: any) {
+        alert("Erro inesperado: " + err.message);
+    } finally {
+        setUpdating(false);
+    }
+  };
+
+  const handleEditPartial = async (partialId: string) => {
+    const newValue = parseFloat(editingPartialValue);
+    if (isNaN(newValue) || newValue < 0) return;
+
+    setUpdating(true);
+    const currentHistory = contract.payment_history || {};
+    const partials = Array.isArray(currentHistory.partials) ? currentHistory.partials : [];
+    const targetPartial = partials.find((p: any) => p.id === partialId);
+    
+    if (!targetPartial) {
+      setUpdating(false);
+      return;
+    }
+
+    const diff = newValue - targetPartial.amount;
     const currentPaid = Number(contract.paid_amount || 0);
-    const newPaidAmount = Math.min(Number(contract.total_amount), currentPaid + value);
-    const isFullyPaid = newPaidAmount >= (Number(contract.total_amount) - 0.01);
+    const newTotalPaid = Math.max(0, Math.min(Number(contract.total_amount), currentPaid + diff));
+    const isFullyPaid = newTotalPaid >= (Number(contract.total_amount) - 0.01);
 
-    const updateData: any = {
-      paid_amount: newPaidAmount,
+    // Update paid_amount first
+    const { error } = await supabase.from('contracts').update({
+      paid_amount: newTotalPaid,
       status: isFullyPaid ? 'paid' : 'active'
-    };
+    }).eq('id', contract.id);
 
-    if (isFullyPaid) {
-      updateData.payment_history = {
-        ...(contract.payment_history || {}),
-        settled: new Date().toISOString().split('T')[0]
-      };
-    }
-
-    const { error } = await supabase.from('contracts').update(updateData).eq('id', contract.id);
-
-    setUpdating(false);
     if (!error) {
-      setShowPartialPay(false);
-      setPartialValue('');
-      onSuccess();
+        const newPartials = partials.map((p: any) => 
+            p.id === partialId ? { ...p, amount: newValue } : p
+        );
+        
+        const { error: histError } = await supabase.from('contracts').update({
+            payment_history: {
+                ...currentHistory,
+                partials: newPartials
+            }
+        }).eq('id', contract.id);
+        
+        if (histError) console.warn("Failed to update history column during edit", histError);
+        
+        setEditingPartialId(null);
+        setEditingPartialValue('');
+        onSuccess();
+    } else {
+        alert("Erro ao editar valor: " + error.message);
     }
+    setUpdating(false);
+  };
+
+  const handleDeletePartial = async (partialId: string) => {
+    setIsDeletingPartial(partialId);
+    setUpdating(true);
+    
+    const currentHistory = contract.payment_history || {};
+    const partials = Array.isArray(currentHistory.partials) ? currentHistory.partials : [];
+    const targetPartial = partials.find((p: any) => p.id === partialId);
+    
+    if (!targetPartial) {
+      setUpdating(false);
+      setIsDeletingPartial(null);
+      return;
+    }
+
+    const currentPaid = Number(contract.paid_amount || 0);
+    const newTotalPaid = Math.max(0, currentPaid - targetPartial.amount);
+
+    const { error } = await supabase.from('contracts').update({
+      paid_amount: newTotalPaid,
+      status: 'active'
+    }).eq('id', contract.id);
+
+    if (!error) {
+        const newPartials = partials.filter((p: any) => p.id !== partialId);
+        const { error: histError } = await supabase.from('contracts').update({
+            payment_history: {
+                ...currentHistory,
+                partials: newPartials
+            }
+        }).eq('id', contract.id);
+        if (histError) console.warn("Failed to update history column during delete", histError);
+        onSuccess();
+    } else {
+        alert("Erro ao excluir registro: " + error.message);
+    }
+    setUpdating(false);
+    setIsDeletingPartial(null);
   };
 
   const handleDelete = async () => {
@@ -2471,7 +2664,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                    </div>
                    <div className="grid grid-cols-1 gap-2">
                       <div className="flex justify-between items-center px-2 py-1.5">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES ({remainingInstallmentsCount} PARC.)</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">JUROS VIGENTES</span>
                           <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {remainingInterestTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between items-center px-[7px] pl-[19px] pt-[2px] pb-[2px] mt-[-15px] ml-[-10px] h-[31.4805px]">
@@ -2532,8 +2725,126 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                   disabled={updating || abatementValue <= 0} 
                   className="w-full bg-blue-600 text-white h-16 rounded-[2rem] font-black text-[10px] shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 mt-4"
                 >
-                  {updating ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>} 
-                  {updating ? 'EFETUANDO BAIXA...' : 'CONFIRMAR ABATIMENTO'}
+                  {updating && (!editingPartialId) ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle2 size={18}/>} 
+                  {updating && (!editingPartialId) ? 'EFETUANDO BAIXA...' : 'CONFIRMAR ABATIMENTO'}
+                </button>
+
+                <div className="mt-6 pt-6 border-t border-slate-100">
+                   <h4 className="text-[10px] font-black text-slate-500 tracking-widest uppercase mb-4 flex items-center gap-2">
+                     <History size={14} className="text-blue-500" /> HISTÓRICO DE ABATIMENTOS
+                   </h4>
+                   <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                      {Array.isArray(contract.payment_history?.partials) && contract.payment_history.partials.length > 0 ? (
+                         (() => {
+                            let cumulative = 0;
+                            const labeledPartials = contract.payment_history.partials.map((p: any) => {
+                               const currentInstallment = monthlyInterestOnly > 0 ? Math.floor(cumulative / (monthlyInterestOnly + 0.001)) + 1 : 1;
+                               cumulative += p.amount;
+                               return { ...p, installmentNum: Math.min(Number(contract.months), currentInstallment) };
+                            });
+                            return [...labeledPartials].reverse().map((p: any) => (
+                               <div key={p.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center justify-between group transition-all hover:border-blue-200">
+                                 <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center relative shadow-inner">
+                                       <Wallet size={14} />
+                                       <span className="absolute -top-1 -right-1 bg-violet-600 text-white text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white shadow-sm">{p.installmentNum}</span>
+                                    </div>
+                                    <div>
+                                       {editingPartialId === p.id ? (
+                                          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                             <span className="text-[10px] font-black text-blue-600 tracking-tighter">R$</span>
+                                              <input 
+                                                type="number" 
+                                                step="0.01"
+                                                className="w-24 px-2 py-1 text-[12px] font-black bg-white border border-blue-200 rounded-xl outline-none focus:ring-1 focus:ring-blue-500"
+                                                value={editingPartialValue}
+                                                onChange={(e) => setEditingPartialValue(e.target.value)}
+                                                autoFocus
+                                                onKeyDown={(e) => e.key === 'Enter' && handleEditPartial(p.id)}
+                                              />
+                                          </div>
+                                       ) : (
+                                          <p className="text-[12px] font-black text-slate-700 tracking-tighter">
+                                             R$ {p.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                             <span className="ml-2 text-[8px] text-violet-500 opacity-70">P.{p.installmentNum}</span>
+                                          </p>
+                                       )}
+                                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{new Date(p.date).toLocaleDateString('pt-BR')} às {new Date(p.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                 </div>
+                               <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                  {editingPartialId === p.id ? (
+                                     <>
+                                        <button onClick={(e) => { e.stopPropagation(); handleEditPartial(p.id); }} disabled={updating} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"><CheckCircle size={18}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingPartialId(null); setEditingPartialValue(''); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl transition-colors"><X size={18}/></button>
+                                     </>
+                                  ) : (
+                                     <>
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingPartialId(p.id); setEditingPartialValue(p.amount.toString()); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"><Edit2 size={16}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeletePartial(p.id); }} disabled={updating} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors">
+                                           {isDeletingPartial === p.id ? <RefreshCw className="animate-spin" size={16}/> : <Trash2 size={16}/>}
+                                        </button>
+                                     </>
+                                  )}
+                               </div>
+                            </div>
+                         ));
+                      })()
+                   ) : (
+                         <div className="text-center py-8 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">NENHUM ABATIMENTO REGISTRADO</p>
+                         </div>
+                      )}
+                   </div>
+                </div>
+             </div>
+          </div>
+        )}
+
+        {abateTarget && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+             <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-300 uppercase font-black text-slate-900">
+                <div className="flex justify-between items-center mb-6">
+                   <div className="flex items-center gap-2 text-violet-600">
+                      <Banknote size={20} />
+                      <h3 className="text-sm tracking-tighter uppercase font-black">ABATER {abateTarget.type === 'capital' ? 'CAPITAL BASE' : `PARCELA ${abateTarget.index! + 1}`}</h3>
+                   </div>
+                   <button onClick={() => {setAbateTarget(null); setAbateValue('');}} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-rose-600 transition-all active:scale-95"><X size={18}/></button>
+                </div>
+                
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 flex justify-between items-center group">
+                   <span className="text-[10px] text-slate-500 tracking-widest uppercase font-black">VALOR ATUAL</span>
+                   <span className="text-[14px] text-slate-900 tracking-tighter font-black">
+                      R$ {(abateTarget.type === 'capital' ? remainingCapitalTotal : (getInstallmentStatus(abateTarget.index!).remaining || monthlyInterestOnly)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                   </span>
+                </div>
+
+                <div className="space-y-1.5 mb-8">
+                   <label className="text-[10px] text-slate-500 ml-4 tracking-widest uppercase font-black flex items-center gap-2 mb-1">
+                      <Coins size={12} className="text-emerald-600"/> QUANTO DESEJA ABATER?
+                   </label>
+                   <div className="relative group">
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 text-lg font-black group-focus-within:text-violet-600 transition-colors">R$</span>
+                      <input 
+                        type="number" 
+                        step="0.01"
+                        inputMode="decimal"
+                        autoFocus
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-2xl font-black outline-none focus:ring-1 focus:ring-violet-500 transition-all text-slate-900 shadow-sm" 
+                        placeholder="0,00" 
+                        value={abateValue} 
+                        onChange={(e) => setAbateValue(e.target.value)} 
+                      />
+                   </div>
+                </div>
+
+                <button 
+                  onClick={handleTargetedAbatement}
+                  disabled={updating || !abateValue || parseFloat(abateValue.replace(',', '.')) <= 0}
+                  className="w-full bg-violet-600 text-white h-16 rounded-[2rem] font-black text-[10px] shadow-xl shadow-violet-200 flex items-center justify-center gap-2 tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all hover:bg-violet-700 hover:-translate-y-0.5"
+                >
+                  {updating ? <RefreshCw className="animate-spin" size={18}/> : <CheckCircle size={18}/>}
+                  {updating ? 'PROCESSANDO...' : 'CONFIRMAR ABATE'}
                 </button>
              </div>
           </div>
@@ -2638,19 +2949,24 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                      }
                      const dueDate = new Date(firstDueDate);
                      dueDate.setMonth(dueDate.getMonth() + i);
-                     const isPaid = i < installmentsPaidCount;
-                     const isLastPaid = i === installmentsPaidCount - 1;
-                     const isNextToPay = i === installmentsPaidCount;
+                     
+                     const { paid, remaining, isFullyPaid } = getInstallmentStatus(i);
+                     const isNextToPay = !isFullyPaid && (i === installmentsPaidCount);
+                     const isLastPaid = isFullyPaid && (i === installmentsPaidCount - 1);
                      const canToggle = (isNextToPay && contract.status !== 'paid') || isLastPaid;
+                     
+                     // Custom visibility for "Abater" button:
+                     // Visible if current is not paid AND (it's the first installment OR the previous one is fully paid)
+                     const canAbate = !isFullyPaid && (i === 0 || getInstallmentStatus(i - 1).isFullyPaid);
 
                      return (
-                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isPaid ? 'bg-slate-200 border-slate-300' : 'bg-white border-slate-200 shadow-sm'}`}>
+                        <div key={i} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isFullyPaid ? 'bg-slate-200 border-slate-300' : 'bg-white border-slate-200 shadow-sm'}`}>
                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isPaid ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>{i + 1}</div>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${isFullyPaid ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>{i + 1}</div>
                               <div>
                                  <p className="text-[12px] font-black text-slate-900 uppercase leading-none">PARCELA JUROS</p>
-                                 <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${isPaid ? 'text-slate-500' : 'text-rose-500'}`}>VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
-                                 {isPaid && (
+                                 <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${isFullyPaid ? 'text-slate-500' : 'text-rose-500'}`}>VENC. {dueDate.toLocaleDateString('pt-BR')}</p>
+                                 {isFullyPaid && (
                                     editingPaymentDate?.index === i ? (
                                         <div onClick={e => e.stopPropagation()} className="mt-1 flex items-center gap-1">
                                             <input 
@@ -2680,27 +2996,44 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                         </div>
                                     )
                                  )}
+                                 {!isFullyPaid && paid > 0 && (
+                                     <p className="text-[10px] text-emerald-600 font-black uppercase mt-1.5 tracking-widest">
+                                         PARCIAL: + R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                     </p>
+                                 )}
                               </div>
                            </div>
                            <div className="flex flex-col items-end gap-1.5 shrink-0">
-                              <p className={`text-[13px] font-black ${isPaid ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isPaid); }} 
-                                disabled={!canToggle || updating} 
-                                className={`h-8 px-5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${
-                                  isPaid 
-                                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
-                                    : canToggle 
-                                      ? 'bg-rose-500 text-white hover:bg-rose-600' 
-                                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                }`}
-                              >
-                                 {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? (
-                                   <RefreshCw className="animate-spin" size={12}/>
-                                 ) : (
-                                   isPaid ? 'PAGO' : 'DEVE'
+                              <p className={`text-[13px] font-black ${isFullyPaid ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                 {isFullyPaid ? `R$ ${monthlyInterestOnly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : `R$ ${remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                 {canAbate && (
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); setAbateTarget({ type: 'installment', index: i }); setAbateValue(''); }}
+                                      className="h-7 w-[48px] rounded-xl font-black text-[8px] uppercase tracking-widest transition-all bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-200 flex items-center justify-center"
+                                    >
+                                       ABATER
+                                    </button>
                                  )}
-                              </button>
+                                 <button 
+                                   onClick={(e) => { e.stopPropagation(); if (canToggle) toggleInstallmentPayment(i, isFullyPaid); }} 
+                                   disabled={!canToggle || updating} 
+                                   className={`h-7 w-[48px] rounded-xl font-black text-[8px] uppercase tracking-widest transition-all shadow-sm flex items-center justify-center ${
+                                     isFullyPaid 
+                                       ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                                       : canToggle 
+                                         ? 'bg-rose-500 text-white hover:bg-rose-600' 
+                                         : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                   }`}
+                                 >
+                                    {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? (
+                                      <RefreshCw className="animate-spin" size={10}/>
+                                    ) : (
+                                      isFullyPaid ? 'PAGO' : 'DEVE'
+                                    )}
+                                 </button>
+                              </div>
                            </div>
                         </div>
                      );
@@ -2714,34 +3047,44 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                         <Coins size={16} />
                      </div>
                      <div>
-                        <p className="text-[12px] font-black text-slate-900 uppercase leading-none mt-[-14px] mb-0">VALOR CAPITAL</p>
+                        <p className="text-[12px] font-black text-slate-900 uppercase leading-none mt-[-4px] mb-0">VALOR CAPITAL</p>
                         <p className={`text-[10px] font-black uppercase mt-1.5 tracking-widest ${contract.status === 'paid' ? 'text-slate-500' : 'text-violet-600'}`}>
                            {contract.status === 'paid' ? 'LIQUIDADO' : 'PENDENTE'}
                         </p>
                         {contract.status === 'paid' && contract.payment_history?.settled && (
                            <p className="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-widest">
-                              PAGO EM {new Date(contract.payment_history.settled + 'T12:00:00').toLocaleDateString('pt-BR')}
+                               PAGO EM {new Date(contract.payment_history.settled + 'T12:00:00').toLocaleDateString('pt-BR')}
                            </p>
                         )}
                      </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                      <p className={`text-[13px] font-black ${contract.status === 'paid' ? 'text-emerald-600' : 'text-slate-500'}`}>R$ {remainingCapitalTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                     <button 
-                       onClick={(e) => { e.stopPropagation(); if (contract.status !== 'paid') markAsPaid(); }} 
-                       disabled={contract.status === 'paid' || updating} 
-                       className={`h-8 px-5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shadow-sm ${
-                         contract.status === 'paid' 
-                           ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
-                           : 'bg-rose-500 text-white hover:bg-rose-600' 
-                       }`}
-                     >
-                        {updating ? (
-                          <RefreshCw className="animate-spin" size={12}/>
-                        ) : (
-                          contract.status === 'paid' ? 'PAGO' : 'DEVE'
+                     <div className="flex items-center gap-1.5">
+                        {contract.status !== 'paid' && getInstallmentStatus(contract.months - 1).isFullyPaid && (
+                           <button 
+                             onClick={(e) => { e.stopPropagation(); setAbateTarget({ type: 'capital' }); setAbateValue(''); }}
+                             className="h-7 w-[48px] rounded-xl font-black text-[8px] uppercase tracking-widest transition-all bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-200 flex items-center justify-center"
+                           >
+                              ABATER
+                           </button>
                         )}
-                     </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); if (contract.status !== 'paid') markAsPaid(); }} 
+                          disabled={contract.status === 'paid' || updating} 
+                          className={`h-7 w-[48px] rounded-xl font-black text-[8px] uppercase tracking-widest transition-all shadow-sm flex items-center justify-center ${
+                            contract.status === 'paid' 
+                              ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                              : 'bg-rose-500 text-white hover:bg-rose-600' 
+                          }`}
+                        >
+                           {updating && (contract.status !== 'paid') ? (
+                             <RefreshCw className="animate-spin" size={10}/>
+                           ) : (
+                             contract.status === 'paid' ? 'PAGO' : 'DEVE'
+                           )}
+                        </button>
+                     </div>
                   </div>
                </div>
             </div>
@@ -2962,7 +3305,7 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                  <InputWrapper label="CAPITAL (R$)" type="number" step="0.01" value={form.capital} onChange={(v: string) => setForm({...form, capital: v})} inputMode="decimal" />
               </div>
               <div className="col-span-3 relative">
-                 <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" style={{ marginTop: '4px', marginRight: '0px', marginBottom: '0px', marginLeft: '-2px' }} />
+                 <InputWrapper label="JUROS (R$)" type="number" step="0.01" value={form.interest_amount} onChange={(v: string) => setForm({...form, interest_amount: v, interest_rate: ''})} inputMode="decimal" />
                  {form.interest_amount && (
                    <p className="text-[8px] text-violet-600 font-black uppercase tracking-widest leading-none absolute -bottom-3 left-1">
                      ({(capital > 0 ? (Number(form.interest_amount) / capital) * 100 : 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%)
@@ -2970,10 +3313,10 @@ const ContractModal = ({ userId, clients, onClose, onSuccess, initialClientId, h
                  )}
               </div>
               <div className="col-span-2">
-                 <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" style={{ width: '49.5px', marginLeft: '-5px' }} />
+                 <InputWrapper label="TAXA (%)" type="number" step="0.1" value={form.interest_rate} onChange={(v: string) => setForm({...form, interest_rate: v, interest_amount: ''})} inputMode="decimal" />
               </div>
               <div className="col-span-2">
-                 <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" style={{ width: '49.5px', marginLeft: '-5px' }} />
+                 <InputWrapper label="PRAZO (M)" type="number" value={form.months} onChange={(v: string) => setForm({...form, months: v})} inputMode="numeric" />
               </div>
            </div>
            <div className="grid grid-cols-2 gap-2">
@@ -3086,6 +3429,7 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
   const [editPhone, setEditPhone] = useState(user.phone || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSaveProfile = async () => {
     setProfileError('');
@@ -3438,9 +3782,11 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     onClose(); 
   };
 
-  const handleDeleteAccount = async () => {
-    if (!confirm('Tem certeza que deseja excluir sua conta? Esta ação é irreversível e todos os seus dados serão apagados, exceto seu e-mail.')) return;
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleFinalDelete = async () => {
     try {
       // 1. Delete contracts
       await supabase.from('contracts').delete().eq('user_id', user.id);
@@ -3816,22 +4162,61 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
             <p className="text-[8px] text-rose-500 font-black tracking-widest uppercase text-center animate-in fade-in slide-in-from-top-1">ESSA FUNÇÃO É PARA VERSÃO PRO</p>
           )}
         </div>
-        <div className="flex flex-col items-center justify-center gap-2 text-slate-500 mt-4 mb-2">
-          <div className="flex items-center gap-1.5">
-            <Mail className="w-3 h-3" />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              SUPORTE: <span className="lowercase font-bold text-slate-400">agicred.gestaodecredito@gmail.com</span>
-            </span>
+        <div className="flex flex-col items-start gap-2 mt-5 mb-3 px-6 lg:px-8">
+          <div className="flex items-center gap-2">
+            <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-[9px] font-black text-slate-700 uppercase tracking-tight">SUPORTE:</span>
+              <span className="text-[9px] font-bold text-slate-400 lowercase">agicred.gestaodecredito@gmail.com</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Globe className="w-3 h-3" />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              ACESSO WEB: <a href="https://agicred.vercel.app" target="_blank" rel="noopener noreferrer" className="lowercase font-bold text-violet-500 hover:text-violet-600 transition-colors">https://agicred.vercel.app</a>
-            </span>
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="text-[9px] font-black text-slate-700 uppercase tracking-tight">ACESSO WEB:</span>
+              <a href="https://agicred.vercel.app" target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-violet-500 hover:text-violet-600 transition-colors lowercase">https://agicred.vercel.app</a>
+            </div>
           </div>
         </div>
         <button type="button" onClick={handleLogout} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><LogOut size={16}/> SAIR DA CONTA</button>
         <button type="button" onClick={handleDeleteAccount} className="w-full text-slate-400 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 pt-2"><Trash2 size={16}/> EXCLUIR MINHA CONTA</button>
+
+        <AnimatePresence>
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 w-full max-w-xs text-center space-y-4"
+              >
+                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                  <Trash2 size={32} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black uppercase tracking-tight text-slate-900">EXCLUIR CONTA?</h4>
+                  <p className="text-[10px] font-medium text-slate-500 uppercase mt-2 leading-relaxed">
+                    ESTA AÇÃO É IRREVERSÍVEL. TODOS OS SEUS DADOS SERÃO APAGADOS PERMANENTEMENTE.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+                  >
+                    CANCELAR
+                  </button>
+                  <button 
+                    onClick={handleFinalDelete}
+                    className="py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-200 transition-all"
+                  >
+                    EXCLUIR
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

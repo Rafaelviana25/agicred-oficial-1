@@ -1,6 +1,22 @@
-VITE_SUPABASE_URL=https://molhsshtzrvkywoqhxho.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMjU2MzgsImV4cCI6MjA4MzgwMTYzOH0.UcyQP7pUKtEO-3G43TEscPtrpcVsRpZJvRBmbSVUH6s
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vbGhzc2h0enJ2a3l3b3FoeGhvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIyNTYzOCwiZXhwIjoyMDgzODAxNjM4fQ.3u57BBPtEuDKTJNDN1giPLgnJ4_KU9h-UqGgVFAB0L4
-MERCADO_PAGO_ACCESS_TOKEN=APP_USR-2064886398402150-022716-fe6f4981f312fbf4fd170ca11d630f4a-14757248
-APP_URL=https://agicred.vercel.app
-VITE_API_URL=https://agicred.vercel.app
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+const supabase = createClient(process.env.VITE_SUPABASE_URL!, process.env.VITE_SUPABASE_ANON_KEY!);
+
+async function check() {
+  const { data, error } = await supabase.from('clients').insert({
+    id: '00000000-0000-0000-0000-000000000000',
+    user_id: '00000000-0000-0000-0000-000000000000',
+    full_name: 'Test',
+    cpf: '123',
+    phone: '123',
+    address: '123',
+    city: '123',
+    workplace: '123',
+    created_at: new Date().toISOString()
+  }).select();
+  console.log('Insert:', data, error);
+}
+
+check();

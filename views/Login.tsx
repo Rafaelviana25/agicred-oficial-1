@@ -84,11 +84,28 @@ const Login: React.FC<LoginProps> = ({ onSwitch, onRecoveryMode }) => {
     setLoading(true);
     setRecoveryError(null);
     try {
+      // Verificar se o e-mail existe no banco de dados primeiro
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', recoveryData.email.toLowerCase())
+        .maybeSingle();
+
+      if (profileError) {
+        throw new Error("Erro ao consultar banco de dados.");
+      }
+
+      if (!profile) {
+        setRecoveryError("ESSE E-MAIL NÃO EXISTE NO BANCO DE DADOS");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(recoveryData.email);
       if (error) throw error;
       setRecoveryStep('otp');
     } catch (err: any) {
-      setRecoveryError("ERRO AO ENVIAR TOKEN: " + err.message);
+      setRecoveryError("ERRO AO ENVIAR TOKEN: " + err.message.toUpperCase());
     } finally {
       setLoading(false);
     }
