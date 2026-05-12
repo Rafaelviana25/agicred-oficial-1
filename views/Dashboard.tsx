@@ -276,6 +276,14 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
   const [showBackup, setShowBackup] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
+  const contractIdMapping = React.useMemo(() => {
+    return [...contracts]
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .reduce((acc, c, index) => {
+        acc[c.id] = (index + 1).toString().padStart(6, '0');
+        return acc;
+      }, {} as Record<string, string>);
+  }, [contracts]);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
@@ -603,6 +611,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                       contracts={contracts} 
                       clients={clients} 
                       onSelectContract={setSelectedContract} 
+                      contractIdMapping={contractIdMapping}
                       currentMonth={currentMonth}
                       setCurrentMonth={setCurrentMonth}
                       currentYear={currentYear}
@@ -616,8 +625,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
                     </button>
                   </>
                 )}
-                {activeTab === 'overdue' && <OverdueSection contracts={overdueContracts} clients={clients} onSelectContract={setSelectedContract} getOverdueStatus={getOverdueStatus} />}
-                {activeTab === 'settled' && <SettledSection settledContracts={settledContracts} clients={clients} onSelectContract={setSelectedContract} />}
+                {activeTab === 'overdue' && <OverdueSection contracts={overdueContracts} clients={clients} onSelectContract={setSelectedContract} getOverdueStatus={getOverdueStatus} contractIdMapping={contractIdMapping} />}
+                {activeTab === 'settled' && <SettledSection settledContracts={settledContracts} clients={clients} onSelectContract={setSelectedContract} contractIdMapping={contractIdMapping} />}
              </div>
            )}
         </div>
@@ -637,6 +646,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
         <ClientDetailsModal 
           client={selectedClient} 
           contracts={contracts.filter(c => c.client_id === selectedClient.id)} 
+          contractIdMapping={contractIdMapping}
           onClose={() => setSelectedClient(null)} 
           onSuccess={fetchData} 
           onSelectContract={(c: Contract) => {
@@ -647,7 +657,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userProfile, onUpgradeSuccess }) 
           }}
         />
       )}
-      {selectedContract && <ContractDetailsModal contract={selectedContract} client={clients.find(c => c.id === selectedContract.client_id)} onClose={() => setSelectedContract(null)} onSuccess={fetchData} />}
+      {selectedContract && <ContractDetailsModal contract={selectedContract} client={clients.find(c => c.id === selectedContract.client_id)} contractIdMapping={contractIdMapping} onClose={() => setSelectedContract(null)} onSuccess={fetchData} />}
       {showProfile && userProfile && <UserProfileModal user={userProfile} contracts={contracts} clients={clients} onClose={() => setShowProfile(false)} onUpgradeRequest={() => { setShowUpgrade(true); }} onBackupRequest={() => { setShowBackup(true); }} onRefresh={onUpgradeSuccess} />}
       {showUpgrade && userProfile && <UpgradeModal user={userProfile} onClose={() => setShowUpgrade(false)} onSuccess={() => { fetchData(); onUpgradeSuccess(); }} />}
       {showBackup && userProfile && <BackupModal userId={userProfile.id} onClose={() => setShowBackup(false)} />}
@@ -1015,7 +1025,7 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
         </div>
       </div>
     </div>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+    <div className="grid grid-cols-1 gap-2">
       {clients.map((c: Client) => (
         <div key={c.id} onClick={() => onSelect(c)} className="glass-panel p-3 rounded-xl shadow-sm flex items-center justify-between group hover:bg-slate-50 transition-all cursor-pointer border border-slate-200">
           <div className="flex items-center gap-2.5 overflow-hidden">
@@ -1043,7 +1053,7 @@ const ClientsSection = ({ clients, onAdd, onSelect, onDelete, searchValue, onSea
   </div>
 );
 
-const SettledSection = ({ settledContracts, clients, onSelectContract }: any) => {
+const SettledSection = ({ settledContracts, clients, onSelectContract, contractIdMapping }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('date-desc');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -1189,7 +1199,7 @@ const SettledSection = ({ settledContracts, clients, onSelectContract }: any) =>
 );
 };
 
-const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, setCurrentMonth, currentYear, setCurrentYear }: any) => {
+const ContractsSection = ({ contracts, clients, onSelectContract, contractIdMapping, currentMonth, setCurrentMonth, currentYear, setCurrentYear }: any) => {
   const monthsAbbr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -1433,6 +1443,10 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
                       {isSettled ? <CheckCircle size={20}/> : <User size={20}/>}
                    </div>
                    <div className="overflow-hidden">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <FileCheck size={10} className="text-emerald-600" />
+                        <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">#{contractIdMapping?.[c.id] || '000000'}</span>
+                      </div>
                       <h4 className={`font-black text-[11px] uppercase leading-tight truncate ${isSettled ? 'text-slate-500' : 'text-slate-900'}`}>{client?.full_name || 'CLIENTE'}</h4>
                       <p className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em] mt-0.5">PARC. {c.activeInstallment}/{c.months}</p>
                    </div>
@@ -1452,7 +1466,7 @@ const ContractsSection = ({ contracts, clients, onSelectContract, currentMonth, 
   );
 };
 
-const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus }: any) => {
+const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus, contractIdMapping }: any) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('name-asc');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -1613,14 +1627,48 @@ const OverdueSection = ({ contracts, clients, onSelectContract, getOverdueStatus
 );
 };
 
-const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectContract, onAddContract }: { client: Client, contracts: Contract[], onClose: () => void, onSuccess: () => void, onSelectContract: (c: Contract) => void, onAddContract: (clientId: string) => void }) => {
+const ClientDetailsModal = ({ client, contracts, contractIdMapping, onClose, onSuccess, onSelectContract, onAddContract }: { client: Client, contracts: Contract[], contractIdMapping: Record<string, string>, onClose: () => void, onSuccess: () => void, onSelectContract: (c: Contract) => void, onAddContract: (clientId: string) => void }) => {
   const [updating, setUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ ...client });
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const monthsAbbr = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
-  const valorTotalEmprestado = contracts.reduce((acc, c) => acc + (Number(c.capital) || 0), 0);
-  const valorTotalRecebido = contracts.reduce((acc, c) => acc + (Number(c.paid_amount) || 0), 0);
+  const capitalTotalEmprestado = contracts.reduce((acc, c) => acc + (Number(c.capital) || 0), 0);
+  const jurosTotaisRecebidos = contracts.reduce((acc, c) => {
+    const interest = Number(c.total_interest) || 0;
+    const paid = Number(c.paid_amount) || 0;
+    // Assume que os pagamentos cobrem primeiro os juros
+    return acc + Math.min(paid, interest);
+  }, 0);
+  const jurosAReceber = contracts.reduce((acc, c) => {
+    const interest = Number(c.total_interest) || 0;
+    const paid = Number(c.paid_amount) || 0;
+    return acc + Math.max(0, interest - paid);
+  }, 0);
   const valorPendente = contracts.reduce((acc, c) => acc + (Number(c.total_amount) - Number(c.paid_amount || 0)), 0);
+  const capitalAReceber = valorPendente - jurosAReceber;
+
+  const totalJurosMes = contracts.reduce((acc, c) => {
+    let monthlyInterest = 0;
+    const startDate = new Date(c.start_date + 'T12:00:00');
+    for (let i = 0; i < c.months; i++) {
+       const dueDate = new Date(startDate);
+       if (c.due_dates_override?.[i]) {
+         const override = new Date(c.due_dates_override[i] + 'T12:00:00');
+         dueDate.setTime(override.getTime());
+       } else {
+         dueDate.setMonth(dueDate.getMonth() + (i + 1));
+       }
+       
+       if (dueDate.getMonth() === currentMonth && dueDate.getFullYear() === currentYear) {
+          monthlyInterest = Number(c.monthly_interest) || 0;
+          break;
+       }
+    }
+    return acc + monthlyInterest;
+  }, 0);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1935,49 +1983,95 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
           </form>
         ) : (
           <div className="space-y-6">
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                <InfoItem icon={<CreditCard />} label="CPF / ID" value={client.cpf || 'NÃO INFORMADO'} />
                <InfoItem icon={<CalendarIcon />} label="NASCIMENTO" value={client.birth_date ? new Date(client.birth_date + 'T12:00:00').toLocaleDateString('pt-BR') : 'NÃO INFORMADO'} />
                <InfoItem icon={<Phone />} label="WHATSAPP" value={client.phone || 'NÃO INFORMADO'} />
                <InfoItem icon={<Briefcase />} label="TRABALHO" value={client.workplace || 'NÃO INFORMADO'} />
-               <InfoItem icon={<MapPin />} label="LOCALIZAÇÃO" value={`${client.address || ''} ${client.city || ''}`.trim() || 'NÃO INFORMADO'} />
+               <div className="col-span-2">
+                  <InfoItem icon={<MapPin />} label="LOCALIZAÇÃO" value={`${client.address || ''} ${client.city || ''}`.trim() || 'NÃO INFORMADO'} />
+               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-200 space-y-4">
-              <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={generateContractsReport} 
+                className="flex-1 bg-violet-100 text-violet-600 px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-200"
+              >
+                <FileEdit size={12}/> RELATORIO
+              </button>
+              <button 
+                onClick={() => onAddContract(client.id)} 
+                className="flex-1 bg-violet-600 text-white px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-700"
+              >
+                <Plus size={12}/> NOVO CONTRATO
+              </button>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 space-y-3">
+              <div className="space-y-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-100">
                 <div className="flex justify-between items-center px-1">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR TOTAL EMPRESTADO</span>
-                  <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {valorTotalEmprestado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">CAPITAL TOTAL EMPRESTADO</span>
+                  <span className="text-[11px] font-black text-rose-600 tracking-tighter">R$ {capitalTotalEmprestado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center px-1">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR TOTAL RECEBIDO</span>
-                  <span className="text-[11px] font-black text-emerald-600 tracking-tighter">R$ {valorTotalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">JUROS TOTAIS RECEBIDOS</span>
+                  <span className="text-[11px] font-black text-emerald-600 tracking-tighter">R$ {jurosTotaisRecebidos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div className="flex justify-between items-center px-1">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">VALOR PENDENTE</span>
-                  <span className="text-[11px] font-black text-violet-600 tracking-tighter">R$ {valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <div className="pt-1 mt-1 border-t border-slate-200/60">
+                  <div className="flex justify-between items-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">VALOR PENDENTE (JUROS + CAPITAL)</span>
+                    <span className="text-[11px] font-black text-violet-600 tracking-tighter">R$ {valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 px-1 mt-1 ml-auto w-fit">
+                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-right self-center">CAPITAL</span>
+                    <span className="text-[9px] font-bold text-rose-600 tracking-tighter text-right">R$ {capitalAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    
+                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest text-right self-center">JUROS</span>
+                    <span className="text-[9px] font-bold text-emerald-600 tracking-tighter text-right">R$ {jurosAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={generateContractsReport} 
-                  className="flex-1 bg-violet-100 text-violet-600 px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-200"
-                >
-                  <FileEdit size={12}/> RELATORIO
-                </button>
-                <button 
-                  onClick={() => onAddContract(client.id)} 
-                  className="flex-1 bg-violet-600 text-white px-3 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all hover:bg-violet-700"
-                >
-                  <Plus size={12}/> NOVO CONTRATO
-                </button>
+              <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-tighter">LISTAGEM DE TÍTULOS</h3>
+                  <div className="flex items-center gap-2 bg-white px-2 py-0.5 rounded-lg border border-slate-200">
+                     <button onClick={() => setCurrentYear(currentYear - 1)} className="p-0.5 hover:bg-slate-50 rounded transition-all text-slate-400 hover:text-slate-900"><ChevronLeft size={10} /></button>
+                     <span className="text-[10px] font-black text-slate-900 tracking-widest min-w-[28px] text-center">{currentYear}</span>
+                     <button onClick={() => setCurrentYear(currentYear + 1)} className="p-0.5 hover:bg-slate-50 rounded transition-all text-slate-400 hover:text-slate-900"><ChevronRight size={10} /></button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between gap-1 w-full h-[32px]">
+                  {monthsAbbr.map((m, idx) => (
+                    <button 
+                      key={m}
+                      onClick={() => setCurrentMonth(idx)}
+                      className={`flex-1 h-7 flex items-center justify-center rounded-lg text-[8px] font-black transition-all border uppercase ${currentMonth === idx ? 'bg-violet-600 text-white border-violet-600 shadow-md scale-105 z-10' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-2.5 border-t border-slate-200 flex justify-between items-center px-1">
+                  <span className="text-rose-600 font-black tracking-widest uppercase text-[8px]">TOTAL DO MÊS A RECEBER</span>
+                  <span className="font-black text-rose-600 tracking-tighter text-[12px]">
+                    R$ {totalJurosMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
+
               <h3 className="text-[10px] font-black text-slate-500 tracking-widest uppercase flex items-center gap-2">TÍTULOS VINCULADOS</h3>
               <div className="bg-slate-50 rounded-2xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
                 {contracts.length > 0 ? contracts.map(c => (
                   <div key={c.id} onClick={() => onSelectContract(c)} className="p-3.5 hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-between group">
                     <div className={`space-y-1 ${c.status === 'paid' ? 'line-through opacity-60' : ''}`}>
+                      <div className="flex items-center gap-1.5 mb-1 opacity-80">
+                        <FileCheck size={10} className="text-violet-600" />
+                        <span className="text-[8px] font-black text-violet-600 uppercase tracking-widest">#{contractIdMapping?.[c.id] || '000000'}</span>
+                      </div>
                       <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest -mt-0.5 pb-[1px]">CAPITAL: R$ {c.capital.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest pb-[1px]">JUROS: R$ {c.total_interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       <p className="text-[10px] text-[#6608ff] font-black uppercase tracking-widest">TOTAL DO CONTRATO: R$ {c.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -2010,7 +2104,7 @@ const ClientDetailsModal = ({ client, contracts, onClose, onSuccess, onSelectCon
   );
 };
 
-const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contract: Contract, client?: Client, onClose: () => void, onSuccess: () => void }) => {
+const ContractDetailsModal = ({ contract, client, contractIdMapping, onClose, onSuccess }: { contract: Contract, client?: Client, contractIdMapping: Record<string, string>, onClose: () => void, onSuccess: () => void }) => {
   const [updating, setUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showPartialPay, setShowPartialPay] = useState(false);
@@ -2854,7 +2948,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
           <div className="flex-1 overflow-hidden">
              <div className="flex items-center gap-1.5 mb-1.5 text-emerald-600">
                 <FileCheck size={16} />
-                <p className="text-[10px] font-black tracking-[0.2em] uppercase">TÍTULO ID: #{contract.id.slice(0, 8)}</p>
+                <p className="text-[10px] font-black tracking-[0.2em] uppercase">TÍTULO ID: #{contractIdMapping?.[contract.id] || '000000'}</p>
              </div>
              <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase leading-tight truncate">{client?.full_name}</h2>
           </div>
@@ -3030,7 +3124,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                                     {updating && (i === installmentsPaidCount || i === installmentsPaidCount - 1) ? (
                                       <RefreshCw className="animate-spin" size={10}/>
                                     ) : (
-                                      isFullyPaid ? 'PAGO' : 'DEVE'
+                                      isFullyPaid ? 'PAGO' : 'PAGAR'
                                     )}
                                  </button>
                               </div>
@@ -3081,7 +3175,7 @@ const ContractDetailsModal = ({ contract, client, onClose, onSuccess }: { contra
                            {updating && (contract.status !== 'paid') ? (
                              <RefreshCw className="animate-spin" size={10}/>
                            ) : (
-                             contract.status === 'paid' ? 'PAGO' : 'DEVE'
+                             contract.status === 'paid' ? 'PAGO' : 'PAGAR'
                            )}
                         </button>
                      </div>
@@ -3821,20 +3915,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     const expires = new Date(user.pro_expires_at);
     if (expires <= now) return 'EXPIRADO';
 
-    let months = expires.getMonth() - now.getMonth() + (12 * (expires.getFullYear() - now.getFullYear()));
-    let days = expires.getDate() - now.getDate();
+    const diff = expires.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
-    if (days < 0) {
-      months--;
-      const prevMonth = new Date(expires.getFullYear(), expires.getMonth(), 0);
-      days += prevMonth.getDate();
-    }
-
-    const parts = [];
-    if (months > 0) parts.push(`${months} MÊS${months > 1 ? 'ES' : ''}`);
-    if (days > 0) parts.push(`${days} DIA${days > 1 ? 'S' : ''}`);
-
-    return parts.length > 0 ? parts.join(' E ') : 'MENOS DE 1 DIA';
+    return `${days} DIA${days !== 1 ? 'S' : ''}`;
   };
 
   const remainingTime = getRemainingProTime();
@@ -3843,20 +3927,10 @@ const UserProfileModal = ({ user, contracts, clients, onClose, onUpgradeRequest,
     const now = new Date();
     if (trialExpiresAt <= now) return 'EXPIRADO';
 
-    let months = trialExpiresAt.getMonth() - now.getMonth() + (12 * (trialExpiresAt.getFullYear() - now.getFullYear()));
-    let days = trialExpiresAt.getDate() - now.getDate();
+    const diff = trialExpiresAt.getTime() - now.getTime();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
-    if (days < 0) {
-      months--;
-      const prevMonth = new Date(trialExpiresAt.getFullYear(), trialExpiresAt.getMonth(), 0);
-      days += prevMonth.getDate();
-    }
-
-    const parts = [];
-    if (months > 0) parts.push(`${months} MÊS${months > 1 ? 'ES' : ''}`);
-    if (days > 0) parts.push(`${days} DIA${days > 1 ? 'S' : ''}`);
-
-    return parts.length > 0 ? parts.join(' E ') : 'MENOS DE 1 DIA';
+    return `${days} DIA${days !== 1 ? 'S' : ''}`;
   };
 
   const remainingTrialTime = getRemainingTrialTime();
